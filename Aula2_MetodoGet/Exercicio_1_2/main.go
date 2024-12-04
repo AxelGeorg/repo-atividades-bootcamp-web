@@ -67,8 +67,8 @@ func GetProductByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func SearchProducts(w http.ResponseWriter, r *http.Request) {
-	priceGtStr := r.URL.Query().Get("price")
-	priceGt, err := strconv.ParseFloat(priceGtStr, 64)
+	priceStr := r.URL.Query().Get("price")
+	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
 		http.Error(w, "Invalid price format", http.StatusBadRequest)
 		return
@@ -76,7 +76,7 @@ func SearchProducts(w http.ResponseWriter, r *http.Request) {
 
 	var filteredProducts []Product
 	for _, product := range Products {
-		if product.Price > priceGt {
+		if product.Price > price {
 			filteredProducts = append(filteredProducts, product)
 		}
 	}
