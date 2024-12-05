@@ -63,7 +63,7 @@ func GetProductByID(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.NotFound(w, r) // Retorna 404 se o produto não for encontrado
+	http.NotFound(w, r)
 }
 
 func SearchProducts(w http.ResponseWriter, r *http.Request) {
