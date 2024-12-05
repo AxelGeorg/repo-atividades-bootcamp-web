@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type Product struct {
@@ -114,10 +115,7 @@ func (c *ControllerProducts) GetAll() http.HandlerFunc {
 
 func (c *ControllerProducts) GetById() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		parts := strings.Split(r.URL.Path, "/")
-		idStr := parts[2]
-
+		idStr := chi.URLParam(r, "id")
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
 			http.Error(w, "Invalid ID format"+err.Error(), http.StatusBadRequest)

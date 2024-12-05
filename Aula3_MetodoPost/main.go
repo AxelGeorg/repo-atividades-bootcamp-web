@@ -13,11 +13,11 @@ func main() {
 
 	rt := chi.NewRouter()
 
-	rt.Route("/products", func(rt chi.Router) {
-		rt.Post("/", ct.Create())
-		rt.Get("/", ct.GetAll())
-		rt.Get("/{id}", ct.GetById())
-		rt.Get("/search", ct.Search())
+	rt.Route("/products", func(r chi.Router) {
+		r.Post("/", ct.Create())
+		r.Get("/", ct.GetAll())
+		r.Get("/{id}", ct.GetById())
+		r.Get("/search", ct.Search())
 	})
 
 	if err := http.ListenAndServe(":8080", rt); err != nil {
