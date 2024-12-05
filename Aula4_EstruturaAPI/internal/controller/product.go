@@ -1,18 +1,14 @@
-package handlers
+package controller
 
 import (
-	hand "aula4/cmd/handler"
+	"aula4/internal"
+	"aula4/internal/service/model"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi"
 )
-
-type ControllerProducts struct {
-	storage map[int]*hand.Product
-}
 
 type RequestBodyProduct struct {
 	Name         string  `json:"name"`
@@ -24,13 +20,13 @@ type RequestBodyProduct struct {
 }
 
 type ResponseBodyProduct struct {
-	Message string       `json:"message"`
-	Data    *DataProduct `json:"data"`
-	Error   bool         `json:"error"`
+	Message string `json:"message"`
+	Data    *Data  `json:"data,omitempty"`
+	Error   bool   `json:"error"`
 }
 
-type DataProduct struct {
-	Id           int     `json:"id"`
+type Data struct {
+	Id           string  `json:"id"`
 	Name         string  `json:"name"`
 	Quantity     int     `json:"quantity"`
 	Code_value   string  `json:"code_value"`
@@ -39,13 +35,11 @@ type DataProduct struct {
 	Price        float64 `json:"price"`
 }
 
-func NewControllerProducts(storage map[int]*hand.Product) *ControllerProducts {
-	return &ControllerProducts{
-		storage: storage,
-	}
+type ProductController struct {
+	ServiceProducts *model.ServiceProducts
 }
 
-func (c *ControllerProducts) Create(w http.ResponseWriter, r *http.Request) {
+func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 	var reqBody RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		code := http.StatusBadRequest
@@ -60,8 +54,7 @@ func (c *ControllerProducts) Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(body)
 	}
 
-	pr := &hand.Product{
-		Id:           len(c.storage) + 1, // mudar isso aquiiiiiiiiii
+	product := internal.Product{
 		Name:         reqBody.Name,
 		Quantity:     reqBody.Quantity,
 		Code_value:   reqBody.Code_value,
@@ -70,21 +63,36 @@ func (c *ControllerProducts) Create(w http.ResponseWriter, r *http.Request) {
 		Price:        reqBody.Price,
 	}
 
-	c.storage[pr.Id] = pr
+	productServ, err := c.ServiceProducts.Create(product)
+	if err != nil {
+		code := http.StatusBadRequest
+		body := &ResponseBodyProduct{
+			Message: "Bad Request",
+			Data:    nil,
+			Error:   true,
+		}
+
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(body)
+		return
+	}
+
+	dt := Data{
+		Id:           productServ.Id,
+		Name:         productServ.Name,
+		Code_value:   productServ.Code_value,
+		Is_published: productServ.Is_published,
+		Expiration:   productServ.Expiration,
+		Quantity:     productServ.Quantity,
+		Price:        productServ.Price,
+	}
 
 	code := http.StatusCreated
 	body := &ResponseBodyProduct{
 		Message: "Product created",
-		Data: &DataProduct{
-			Id:           pr.Id,
-			Name:         pr.Name,
-			Quantity:     pr.Quantity,
-			Code_value:   pr.Code_value,
-			Is_published: pr.Is_published,
-			Expiration:   pr.Expiration,
-			Price:        pr.Price,
-		},
-		Error: false,
+		Data:    &dt,
+		Error:   false,
 	}
 
 	w.WriteHeader(code)
@@ -92,25 +100,20 @@ func (c *ControllerProducts) Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(body)
 }
 
-func (c *ControllerProducts) GetAll(w http.ResponseWriter, r *http.Request) {
+func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var products []*hand.Product
-	for _, product := range c.storage {
+	var products []*internal.Product
+	for _, product := range c.ServiceProducts.Storage.DB {
 		products = append(products, product)
 	}
 	json.NewEncoder(w).Encode(products)
 }
 
-func (c *ControllerProducts) GetById(w http.ResponseWriter, r *http.Request) {
+func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid ID format"+err.Error(), http.StatusBadRequest)
-		return
-	}
 
-	product := c.storage[id]
+	product := c.ServiceProducts.Storage.DB[idStr]
 	if product != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(product)
@@ -120,17 +123,16 @@ func (c *ControllerProducts) GetById(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func (c *ControllerProducts) Search(w http.ResponseWriter, r *http.Request) {
+func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
 	priceStr := r.URL.Query().Get("price")
-	fmt.Println("pegou:" + priceStr)
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
 		http.Error(w, "Invalid price format", http.StatusBadRequest)
 		return
 	}
 
-	var filteredProducts []*hand.Product
-	for _, product := range c.storage {
+	var filteredProducts []*internal.Product
+	for _, product := range c.ServiceProducts.Storage.DB {
 		if product.Price > price {
 			filteredProducts = append(filteredProducts, product)
 		}
@@ -138,4 +140,10 @@ func (c *ControllerProducts) Search(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(filteredProducts)
+}
+
+func NewControllerProducts(service *model.ServiceProducts) *ProductController {
+	return &ProductController{
+		ServiceProducts: service,
+	}
 }

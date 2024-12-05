@@ -1,7 +1,7 @@
-package domain
+package internal
 
 type Product struct {
-	Id           int
+	Id           string
 	Name         string
 	Quantity     int
 	Code_value   string
