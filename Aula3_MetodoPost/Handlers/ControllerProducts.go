@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
-
-	"github.com/go-chi/chi"
+	"strings"
 )
 
 type Product struct {
@@ -114,19 +114,21 @@ func (c *ControllerProducts) GetAll() http.HandlerFunc {
 
 func (c *ControllerProducts) GetById() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		idStr := chi.URLParam(r, "id")
+
+		parts := strings.Split(r.URL.Path, "/")
+		idStr := parts[2]
+
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			http.Error(w, "Invalid ID format", http.StatusBadRequest)
+			http.Error(w, "Invalid ID format"+err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		for _, product := range c.storage {
-			if product.Id == id {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(product)
-				return
-			}
+		product := c.storage[id]
+		if product != nil {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(product)
+			return
 		}
 
 		http.NotFound(w, r)
@@ -136,6 +138,7 @@ func (c *ControllerProducts) GetById() http.HandlerFunc {
 func (c *ControllerProducts) Search() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		priceStr := r.URL.Query().Get("price")
+		fmt.Println("pegou:" + priceStr)
 		price, err := strconv.ParseFloat(priceStr, 64)
 		if err != nil {
 			http.Error(w, "Invalid price format", http.StatusBadRequest)
