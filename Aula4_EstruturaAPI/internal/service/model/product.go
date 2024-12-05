@@ -1,8 +1,8 @@
 package model
 
 import (
-	"aula4/internal"
 	"aula4/internal/repository"
+	internal "aula4/internal/storage"
 )
 
 type ServiceProducts struct {

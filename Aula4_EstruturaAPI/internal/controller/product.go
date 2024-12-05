@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"aula4/internal"
 	"aula4/internal/service/model"
+	internal "aula4/internal/storage"
 	"encoding/json"
 	"net/http"
 	"strconv"

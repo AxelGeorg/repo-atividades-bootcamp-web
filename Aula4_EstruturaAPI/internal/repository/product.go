@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"aula4/internal"
+	internal "aula4/internal/storage"
 
 	"github.com/google/uuid"
 )
