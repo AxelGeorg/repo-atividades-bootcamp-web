@@ -22,6 +22,8 @@ func main() {
 		r.Get("/search", ctrl.Search)
 		r.Post("/", ctrl.Create)
 		r.Put("/{id}", ctrl.UpdateOrCreate)
+		r.Patch("/{id}", ctrl.Update)
+		r.Delete("/{id}", ctrl.Delete)
 	})
 
 	if err := http.ListenAndServe(":8080", rt); err != nil {

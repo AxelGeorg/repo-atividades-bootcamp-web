@@ -23,6 +23,11 @@ func (r *RepositoryDB) Update(product storage.Product) (storage.Product, error) 
 	return product, nil
 }
 
+func (r *RepositoryDB) Delete(id string) error {
+	delete(r.DB, id)
+	return nil
+}
+
 func NewMeliDB() RepositoryDB {
 	return RepositoryDB{
 		DB: make(map[string]*storage.Product),

@@ -205,6 +205,118 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+
+	product := c.ServiceProducts.Storage.DB[idStr]
+	//se der erro product == nil
+
+	//else
+	if product != nil {
+		/*w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(product)
+		return*/
+	}
+
+	var reqBody RequestBodyProduct
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		code := http.StatusBadRequest
+		body := &ResponseBodyProduct{
+			Message: "Bad Request",
+			Data:    nil,
+			Error:   true,
+		}
+
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(body)
+	}
+
+	productBody := storage.Product{
+		Id:           idStr,
+		Name:         reqBody.Name,
+		Quantity:     reqBody.Quantity,
+		Code_value:   reqBody.Code_value,
+		Is_published: reqBody.Is_published,
+		Expiration:   reqBody.Expiration,
+		Price:        reqBody.Price,
+	}
+
+	productServ, err := c.ServiceProducts.Update(productBody)
+	if err != nil {
+		code := http.StatusBadRequest
+		body := &ResponseBodyProduct{
+			Message: "Bad Request",
+			Data:    nil,
+			Error:   true,
+		}
+
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(body)
+		return
+	}
+
+	dt := Data{
+		Id:           productServ.Id,
+		Name:         productServ.Name,
+		Code_value:   productServ.Code_value,
+		Is_published: productServ.Is_published,
+		Expiration:   productServ.Expiration,
+		Quantity:     productServ.Quantity,
+		Price:        productServ.Price,
+	}
+
+	code := http.StatusOK
+	body := &ResponseBodyProduct{
+		Message: "Product updated",
+		Data:    &dt,
+		Error:   false,
+	}
+
+	w.WriteHeader(code)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(body)
+}
+
+func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+
+	product := c.ServiceProducts.Storage.DB[idStr]
+	if product == nil {
+		//error
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(product)
+		return
+	}
+
+	err := c.ServiceProducts.Delete(idStr)
+	if err != nil {
+		code := http.StatusBadRequest
+		body := &ResponseBodyProduct{
+			Message: "Bad Request",
+			Data:    nil,
+			Error:   true,
+		}
+
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(body)
+		return
+	}
+
+	code := http.StatusOK
+	body := &ResponseBodyProduct{
+		Message: "Product deleted",
+		Data:    &Data{},
+		Error:   false,
+	}
+
+	w.WriteHeader(code)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(body)
+}
+
 func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
