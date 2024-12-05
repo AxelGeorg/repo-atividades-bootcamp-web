@@ -1,16 +1,16 @@
 package repository
 
 import (
-	internal "aula4/internal/storage"
+	"aula4/internal/service/storage"
 
 	"github.com/google/uuid"
 )
 
 type RepositoryDB struct {
-	DB map[string]*internal.Product
+	DB map[string]*storage.Product
 }
 
-func (r *RepositoryDB) Create(product internal.Product) (internal.Product, error) {
+func (r *RepositoryDB) Create(product storage.Product) (storage.Product, error) {
 	id := uuid.New()
 	product.Id = id.String()
 
@@ -20,6 +20,6 @@ func (r *RepositoryDB) Create(product internal.Product) (internal.Product, error
 
 func NewMeliDB() RepositoryDB {
 	return RepositoryDB{
-		DB: make(map[string]*internal.Product),
+		DB: make(map[string]*storage.Product),
 	}
 }

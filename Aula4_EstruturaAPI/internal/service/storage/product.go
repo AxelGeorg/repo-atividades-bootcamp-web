@@ -1,4 +1,4 @@
-package internal
+package storage
 
 type Product struct {
 	Id           string

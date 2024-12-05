@@ -2,7 +2,7 @@ package controller
 
 import (
 	"aula4/internal/service/model"
-	internal "aula4/internal/storage"
+	"aula4/internal/service/storage"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -54,7 +54,7 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(body)
 	}
 
-	product := internal.Product{
+	product := storage.Product{
 		Name:         reqBody.Name,
 		Quantity:     reqBody.Quantity,
 		Code_value:   reqBody.Code_value,
@@ -103,7 +103,7 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var products []*internal.Product
+	var products []*storage.Product
 	for _, product := range c.ServiceProducts.Storage.DB {
 		products = append(products, product)
 	}
@@ -131,7 +131,7 @@ func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var filteredProducts []*internal.Product
+	var filteredProducts []*storage.Product
 	for _, product := range c.ServiceProducts.Storage.DB {
 		if product.Price > price {
 			filteredProducts = append(filteredProducts, product)

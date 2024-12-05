@@ -2,7 +2,7 @@ package model
 
 import (
 	"aula4/internal/repository"
-	internal "aula4/internal/storage"
+	"aula4/internal/service/storage"
 )
 
 type ServiceProducts struct {
@@ -15,10 +15,10 @@ func NewServiceProducts(storage repository.RepositoryDB) *ServiceProducts {
 	}
 }
 
-func (s *ServiceProducts) Create(product internal.Product) (internal.Product, error) {
+func (s *ServiceProducts) Create(product storage.Product) (storage.Product, error) {
 	product, err := s.Storage.Create(product)
 	if err != nil {
-		return internal.Product{}, err
+		return storage.Product{}, err
 	}
 
 	return product, nil
