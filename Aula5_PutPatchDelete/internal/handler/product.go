@@ -4,6 +4,7 @@ import (
 	"aula4/internal/service/model"
 	"aula4/internal/service/storage"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -176,29 +177,27 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var reqBody RequestBodyProduct
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		c.handleError(w, "Invalid request body", http.StatusBadRequest)
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	productBody := storage.Product{
-		Id:           idStr,
-		Name:         reqBody.Name,
-		Quantity:     reqBody.Quantity,
-		Code_value:   reqBody.Code_value,
-		Is_published: reqBody.Is_published,
-		Expiration:   reqBody.Expiration,
-		Price:        reqBody.Price,
-	}
+	fmt.Println(updates)
 
-	productServ, err := c.ServiceProducts.Update(productBody)
+	product, err := c.ServiceProducts.Patch(idStr, updates)
 	if err != nil {
-		c.handleError(w, "Could not update product", http.StatusInternalServerError)
+		switch err.Error() {
+		case "product not found":
+			http.Error(w, "Product not found", http.StatusNotFound)
+		default:
+			http.Error(w, "Could not update product", http.StatusInternalServerError)
+		}
 		return
 	}
 
-	c.respondWithProduct(w, "Product updated", productServ)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(product)
 }
 
 func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {

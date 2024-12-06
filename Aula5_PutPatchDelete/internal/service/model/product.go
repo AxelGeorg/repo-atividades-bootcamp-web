@@ -68,6 +68,14 @@ func (s *ServiceProducts) Update(product storage.Product) (storage.Product, erro
 	return product, nil
 }
 
+func (s *ServiceProducts) Patch(id string, updates map[string]interface{}) (*storage.Product, error) {
+	product, err := s.Storage.Patch(id, updates)
+	if err != nil {
+		return nil, err
+	}
+	return product, nil
+}
+
 func (s *ServiceProducts) Delete(id string) error {
 	err := s.Storage.Delete(id)
 	if err != nil {
