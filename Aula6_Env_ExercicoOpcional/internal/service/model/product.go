@@ -39,6 +39,8 @@ func (s *ServiceProducts) TotalPrice(products []*storage.Product) (float64, erro
 		return 0.0, errors.New("no products available")
 	}
 
+	//add validations
+
 	var totalPrice float64
 
 	for _, product := range products {
