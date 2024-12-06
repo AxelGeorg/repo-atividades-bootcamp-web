@@ -291,7 +291,7 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 	for _, id := range ids {
 		product, err := c.ServiceProducts.GetById(id)
 		if err != nil {
-			// Aqui você pode tratar erros como "product not found"
+			// tratar erros
 			continue
 		}
 		products = append(products, product)
