@@ -289,7 +289,7 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 
 	var products []*storage.Product
 	for _, id := range ids {
-		product, err := c.ServiceProducts.GetById(id)
+		product, err := c.ServiceProducts.GetById(strings.TrimSpace(id))
 		if err != nil {
 			// tratar erros
 			continue
