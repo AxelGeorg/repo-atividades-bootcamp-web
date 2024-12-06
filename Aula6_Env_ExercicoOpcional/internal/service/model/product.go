@@ -3,6 +3,7 @@ package model
 import (
 	"aula4/internal/repository"
 	"aula4/internal/service/storage"
+	"errors"
 )
 
 type ServiceProducts struct {
@@ -32,8 +33,19 @@ func (s *ServiceProducts) SearchByPrice(price float64) ([]*storage.Product, erro
 	return filteredProducts, nil
 }
 
-func (s *ServiceProducts) TotalPrice(ids []string) (float64, error) {
+func (s *ServiceProducts) TotalPrice(products []*storage.Product) (float64, error) {
 
+	if len(products) == 0 {
+		return 0.0, errors.New("no products available")
+	}
+
+	var totalPrice float64
+
+	for _, product := range products {
+		totalPrice += product.Price
+	}
+
+	return totalPrice, nil
 }
 
 func (s *ServiceProducts) GetAll() ([]*storage.Product, error) {

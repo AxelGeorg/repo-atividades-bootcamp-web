@@ -27,6 +27,11 @@ type ResponseBodyProduct struct {
 	Error   bool   `json:"error"`
 }
 
+type ResponseBodyTotalPrice struct {
+	Products   []*Data `json:"products,omitempty"`
+	TotalPrice float64 `json:"total_price"`
+}
+
 type Data struct {
 	Id           string  `json:"id"`
 	Name         string  `json:"name"`
@@ -282,12 +287,47 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 
 	ids := strings.Split(listIds, ",")
 
-	totalPrice, err := c.ServiceProducts.TotalPrice(ids)
-	if err != nil {
-		c.handleError(w, err.Error(), http.StatusInternalServerError)
+	var products []*storage.Product
+	for _, id := range ids {
+		product, err := c.ServiceProducts.GetById(id)
+		if err != nil {
+			// Aqui você pode tratar erros como "product not found"
+			continue
+		}
+		products = append(products, product)
+	}
+
+	if len(products) == 0 {
+		c.handleError(w, "Products not found", http.StatusBadRequest)
 		return
 	}
 
+	totalPrice, err := c.ServiceProducts.TotalPrice(products)
+	if err != nil {
+		c.handleError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var productsResponse []*Data
+	for _, product := range products {
+		dt := Data{
+			Id:           product.Id,
+			Name:         product.Name,
+			Code_value:   product.Code_value,
+			Is_published: product.Is_published,
+			Expiration:   product.Expiration,
+			Quantity:     product.Quantity,
+			Price:        product.Price,
+		}
+
+		productsResponse = append(productsResponse, &dt)
+	}
+
+	body := &ResponseBodyTotalPrice{
+		Products:   productsResponse,
+		TotalPrice: totalPrice,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(products)
+	json.NewEncoder(w).Encode(body)
 }
