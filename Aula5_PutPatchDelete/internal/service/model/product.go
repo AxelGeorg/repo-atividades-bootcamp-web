@@ -15,6 +15,41 @@ func NewServiceProducts(storage repository.RepositoryDB) *ServiceProducts {
 	}
 }
 
+func (s *ServiceProducts) SearchByPrice(price float64) ([]*storage.Product, error) {
+	products, err := s.Storage.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var filteredProducts []*storage.Product
+
+	for _, product := range products {
+		if product.Price > price {
+			filteredProducts = append(filteredProducts, product)
+		}
+	}
+
+	return filteredProducts, nil
+}
+
+func (s *ServiceProducts) GetAll() ([]*storage.Product, error) {
+	products, err := s.Storage.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
+func (s *ServiceProducts) GetById(id string) (*storage.Product, error) {
+	product, err := s.Storage.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
+}
+
 func (s *ServiceProducts) Create(product storage.Product) (storage.Product, error) {
 	product, err := s.Storage.Create(product)
 	if err != nil {
