@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -85,7 +86,32 @@ func (c *ProductController) respondWithProduct(w http.ResponseWriter, message st
 	json.NewEncoder(w).Encode(body)
 }
 
+func (c *ProductController) respondWithError(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	w.Write([]byte(`{"message": "` + message + `"}`))
+}
+
+func (c *ProductController) validateToken(w http.ResponseWriter, r *http.Request) bool {
+	token := r.Header.Get("Token")
+	if token == "" {
+		c.respondWithError(w, http.StatusUnauthorized, "Authorization header is missing")
+		return false
+	}
+
+	if token != os.Getenv("TOKEN") {
+		c.respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return false
+	}
+
+	return true
+}
+
 func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	var reqBody RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		c.handleError(w, "Invalid request body", http.StatusBadRequest)
@@ -138,6 +164,10 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	var reqBody RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		c.handleError(w, "Invalid request body", http.StatusBadRequest)
@@ -175,6 +205,10 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	idStr := chi.URLParam(r, "id")
 
 	_, err := c.ServiceProducts.Storage.GetById(idStr)
@@ -207,6 +241,10 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	idStr := chi.URLParam(r, "id")
 
 	if _, exists := c.ServiceProducts.Storage.DB[idStr]; !exists {
@@ -232,6 +270,10 @@ func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	products, err := c.ServiceProducts.GetAll()
@@ -244,6 +286,10 @@ func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	idStr := chi.URLParam(r, "id")
 
 	product, err := c.ServiceProducts.GetById(idStr)
@@ -261,6 +307,10 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	priceStr := r.URL.Query().Get("price")
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
@@ -279,30 +329,18 @@ func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request) {
+	if !c.validateToken(w, r) {
+		return
+	}
+
 	listIds := r.URL.Query().Get("list")
-	if listIds == "" {
-		http.Error(w, "No IDs provided", http.StatusBadRequest)
-		return
+
+	var ids []string
+	if listIds != "" {
+		ids = strings.Split(listIds, ",")
 	}
 
-	ids := strings.Split(listIds, ",")
-
-	var products []*storage.Product
-	for _, id := range ids {
-		product, err := c.ServiceProducts.GetById(strings.TrimSpace(id))
-		if err != nil {
-			// tratar erros
-			continue
-		}
-		products = append(products, product)
-	}
-
-	if len(products) == 0 {
-		c.handleError(w, "Products not found", http.StatusBadRequest)
-		return
-	}
-
-	totalPrice, err := c.ServiceProducts.TotalPrice(products)
+	totalPrice, products, err := c.ServiceProducts.TotalPrice(ids)
 	if err != nil {
 		c.handleError(w, err.Error(), http.StatusBadRequest)
 		return
