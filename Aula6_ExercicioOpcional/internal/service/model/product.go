@@ -52,20 +52,25 @@ func (s *ServiceProducts) getProductQuantity(ids []string) (int, []*storage.Prod
 	var quantity int
 	var products []*storage.Product
 	for _, id := range ids {
-		product, err := s.GetById(strings.TrimSpace(id))
+		idStr := strings.TrimSpace(id)
+		product, err := s.GetById(idStr)
 		if err != nil {
-			log.Printf("Error retrieving product with ID %s: %v", id, err)
+			log.Printf("Error retrieving product with ID:" + idStr + " - Error: " + err.Error())
 			continue
 		}
 
-		mapProdQtd[id]++
-		if mapProdQtd[id] > product.Quantity {
-			return 0.0, nil, errors.New("not enough stock for product ID %s")
+		mapProdQtd[idStr]++
+		if mapProdQtd[idStr] > product.Quantity {
+			return 0.0, nil, errors.New("not enough stock for product ID:" + idStr)
+		}
+
+		product.Is_published = true
+		_, err = s.Update(*product)
+		if err != nil {
+			return 0.0, nil, err
 		}
 
 		quantity++
-
-		s.Update(*product)
 		products = append(products, product)
 	}
 
