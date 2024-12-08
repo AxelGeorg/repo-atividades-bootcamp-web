@@ -3,7 +3,7 @@ package service
 import (
 	"aula4/internal/repository"
 	"aula4/internal/repository/storage"
-	"aula4/internal/validation"
+	"aula4/internal/utils"
 )
 
 const (
@@ -98,7 +98,7 @@ func (s *ServiceProducts) GetById(id string) (*storage.Product, error) {
 }
 
 func (s *ServiceProducts) Create(product storage.Product) (storage.Product, error) {
-	if err := validation.ValidateRequiredFields(product); err != nil {
+	if err := utils.ValidateRequiredFields(product); err != nil {
 		return storage.Product{}, err
 	}
 
@@ -109,11 +109,11 @@ func (s *ServiceProducts) Create(product storage.Product) (storage.Product, erro
 		}
 	}
 
-	if err := validation.CheckUniqueCodeValue(products, product.Code_value); err != nil {
+	if err := utils.CheckUniqueCodeValue(products, product.Code_value); err != nil {
 		return storage.Product{}, err
 	}
 
-	if err := validation.ValidateDate(product.Expiration); err != nil {
+	if err := utils.ValidateDate(product.Expiration); err != nil {
 		return storage.Product{}, err
 	}
 
@@ -126,7 +126,7 @@ func (s *ServiceProducts) Create(product storage.Product) (storage.Product, erro
 }
 
 func (s *ServiceProducts) Update(product storage.Product) (storage.Product, error) {
-	if err := validation.ValidateRequiredFields(product); err != nil {
+	if err := utils.ValidateRequiredFields(product); err != nil {
 		return storage.Product{}, err
 	}
 
@@ -137,11 +137,11 @@ func (s *ServiceProducts) Update(product storage.Product) (storage.Product, erro
 		}
 	}
 
-	if err := validation.CheckUniqueCodeValue(products, product.Code_value); err != nil {
+	if err := utils.CheckUniqueCodeValue(products, product.Code_value); err != nil {
 		return storage.Product{}, err
 	}
 
-	if err := validation.ValidateDate(product.Expiration); err != nil {
+	if err := utils.ValidateDate(product.Expiration); err != nil {
 		return storage.Product{}, err
 	}
 

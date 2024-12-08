@@ -20,7 +20,7 @@ func ResponseWithError(w http.ResponseWriter, err error, statusCode int) {
 	json.NewEncoder(w).Encode(body)
 }
 
-func RespondWithProduct(w http.ResponseWriter, message string, product storage.Product) {
+func RespondWithProduct(w http.ResponseWriter, product *storage.Product, statusCode int, message string) {
 	dt := Data{
 		Id:           product.Id,
 		Name:         product.Name,
@@ -38,6 +38,7 @@ func RespondWithProduct(w http.ResponseWriter, message string, product storage.P
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(body)
 }
 

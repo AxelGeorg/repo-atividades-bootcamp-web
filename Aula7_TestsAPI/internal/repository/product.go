@@ -2,7 +2,7 @@ package repository
 
 import (
 	"aula4/internal/repository/storage"
-	"aula4/internal/validation"
+	"aula4/internal/utils"
 	"errors"
 
 	"github.com/google/uuid"
@@ -81,7 +81,7 @@ func (r *RepositoryProducts) Patch(id string, updates map[string]interface{}) (*
 			}
 		}
 
-		if err := validation.CheckUniqueCodeValue(products, product.Code_value); err != nil {
+		if err := utils.CheckUniqueCodeValue(products, product.Code_value); err != nil {
 			return nil, err
 		}
 
@@ -91,7 +91,7 @@ func (r *RepositoryProducts) Patch(id string, updates map[string]interface{}) (*
 		product.Is_published = &isPublished
 	}
 	if expiration, ok := updates["expiration"].(string); ok {
-		if err := validation.ValidateDate(product.Expiration); err != nil {
+		if err := utils.ValidateDate(product.Expiration); err != nil {
 			return nil, err
 		}
 

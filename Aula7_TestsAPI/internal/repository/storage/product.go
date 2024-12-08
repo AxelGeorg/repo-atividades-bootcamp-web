@@ -110,6 +110,7 @@ func (s *StorageProducts) UpdateProduct(updatedProduct *Product) error {
 			return s.WriteProductsToFile(products)
 		}
 	}
+
 	return errors.New("product not found")
 }
 

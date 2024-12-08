@@ -3,6 +3,7 @@ package handler
 import (
 	"aula4/internal/repository/storage"
 	"aula4/internal/service"
+	"aula4/internal/utils"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -59,7 +60,7 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 
 	var reqBody RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		ResponseWithError(w, errors.New("invalid request body"), http.StatusBadRequest)
+		ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -83,25 +84,7 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dt := Data{
-		Id:           productServ.Id,
-		Name:         productServ.Name,
-		Code_value:   productServ.Code_value,
-		Is_published: *productServ.Is_published,
-		Expiration:   productServ.Expiration,
-		Quantity:     productServ.Quantity,
-		Price:        productServ.Price,
-	}
-
-	body := &ResponseBodyProduct{
-		Message: "Product created",
-		Data:    &dt,
-		Error:   false,
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(body)
+	RespondWithProduct(w, &productServ, http.StatusCreated, utils.MessageProductCreated)
 }
 
 func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +94,7 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 
 	var reqBody RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		ResponseWithError(w, errors.New("invalid request body"), http.StatusBadRequest)
+		ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -131,19 +114,19 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 		if err.Error() == "product not found" {
 			productServ, err = c.Service.Create(product)
 			if err != nil {
-				ResponseWithError(w, errors.New("could not create product"), http.StatusInternalServerError)
+				ResponseWithError(w, err, http.StatusInternalServerError)
 				return
 			}
 
-			RespondWithProduct(w, "Product created", productServ)
+			RespondWithProduct(w, &productServ, http.StatusCreated, utils.MessageProductCreated)
 			return
 		}
 
-		ResponseWithError(w, errors.New("could not update product"), http.StatusBadRequest)
+		ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
-	RespondWithProduct(w, "Product updated", productServ)
+	RespondWithProduct(w, &productServ, http.StatusOK, utils.MessageProductUpdated)
 }
 
 func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
@@ -152,16 +135,15 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := chi.URLParam(r, "id")
-
 	_, err := c.Service.GetById(idStr)
 	if err != nil {
-		ResponseWithError(w, errors.New("product not found"), http.StatusNotFound)
+		ResponseWithError(w, err, http.StatusNotFound)
 		return
 	}
 
 	var updates map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -169,15 +151,14 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err.Error() {
 		case "product not found":
-			http.Error(w, "Product not found", http.StatusNotFound)
+			ResponseWithError(w, err, http.StatusNotFound)
 		default:
-			http.Error(w, "Could not update product", http.StatusInternalServerError)
+			ResponseWithError(w, err, http.StatusInternalServerError)
 		}
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(product)
+	RespondWithProduct(w, product, http.StatusOK, utils.MessageProductUpdated)
 }
 
 func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
@@ -186,27 +167,18 @@ func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := chi.URLParam(r, "id")
-
 	if _, err := c.Service.GetById(idStr); err != nil {
-		ResponseWithError(w, errors.New("product not found"), http.StatusNotFound)
+		ResponseWithError(w, err, http.StatusNotFound)
 		return
 	}
 
 	err := c.Service.Delete(idStr)
 	if err != nil {
-		ResponseWithError(w, errors.New("could not delete product"), http.StatusInternalServerError)
+		ResponseWithError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	body := &ResponseBodyProduct{
-		Message: "Product deleted",
-		Data:    nil,
-		Error:   false,
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(body)
+	RespondWithProduct(w, nil, http.StatusNoContent, utils.MessageProductDeleted)
 }
 
 func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -214,14 +186,14 @@ func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	products, err := c.Service.GetAll()
 	if err != nil {
-		ResponseWithError(w, errors.New("could not retrieve products"), http.StatusInternalServerError)
+		ResponseWithError(w, err, http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(products)
 }
 
@@ -231,18 +203,18 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := chi.URLParam(r, "id")
-
 	product, err := c.Service.GetById(idStr)
 	if err != nil {
 		if err.Error() == "product not found" {
-			ResponseWithError(w, errors.New("product not found"), http.StatusNotFound)
+			ResponseWithError(w, err, http.StatusNotFound)
 		} else {
-			ResponseWithError(w, errors.New("could not retrieve product"), http.StatusInternalServerError)
+			ResponseWithError(w, err, http.StatusInternalServerError)
 		}
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(product)
 }
 
@@ -265,6 +237,7 @@ func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(products)
 }
 
@@ -307,5 +280,6 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(body)
 }

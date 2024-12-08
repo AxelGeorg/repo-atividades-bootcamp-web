@@ -1,9 +1,15 @@
-package validation
+package utils
 
 import (
 	"aula4/internal/repository/storage"
 	"errors"
 	"time"
+)
+
+const (
+	MessageProductCreated = "Product created"
+	MessageProductUpdated = "Product updated"
+	MessageProductDeleted = "Product deleted"
 )
 
 func CheckUniqueCodeValue(products []*storage.Product, codeValue string) error {
