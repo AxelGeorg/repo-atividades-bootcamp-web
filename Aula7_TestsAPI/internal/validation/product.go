@@ -1,22 +1,12 @@
 package validation
 
 import (
-	"aula4/internal/repository"
 	"aula4/internal/repository/storage"
 	"errors"
 	"time"
 )
 
-func CheckUniqueCodeValue(repo repository.Repository, codeValue string) error {
-	products, err := repo.GetAll()
-	if err != nil {
-		if err.Error() != "no Products" {
-			return err
-		}
-
-		return nil
-	}
-
+func CheckUniqueCodeValue(products []*storage.Product, codeValue string) error {
 	for _, product := range products {
 		if product.Code_value == codeValue {
 			return errors.New("the code_value must be unique")
@@ -27,11 +17,12 @@ func CheckUniqueCodeValue(repo repository.Repository, codeValue string) error {
 }
 
 func ValidateDate(dateStr string) error {
-	layout := "02/02/2006"
+	layout := "02/01/2006"
 	_, err := time.Parse(layout, dateStr)
 	if err != nil {
-		return errors.New("data inválida. O formato deve ser DD/MM/YYYY")
+		return errors.New("invalid date. The format must be DD/MM/YYYY")
 	}
+
 	return nil
 }
 

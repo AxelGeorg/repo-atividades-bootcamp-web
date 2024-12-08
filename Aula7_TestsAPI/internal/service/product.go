@@ -102,7 +102,14 @@ func (s *ServiceProducts) Create(product storage.Product) (storage.Product, erro
 		return storage.Product{}, err
 	}
 
-	if err := validation.CheckUniqueCodeValue(s.Repository, product.Code_value); err != nil {
+	products, err := s.Repository.GetAll()
+	if err != nil {
+		if err.Error() != "no Products" {
+			return storage.Product{}, err
+		}
+	}
+
+	if err := validation.CheckUniqueCodeValue(products, product.Code_value); err != nil {
 		return storage.Product{}, err
 	}
 
@@ -110,7 +117,7 @@ func (s *ServiceProducts) Create(product storage.Product) (storage.Product, erro
 		return storage.Product{}, err
 	}
 
-	product, err := s.Repository.Create(product)
+	product, err = s.Repository.Create(product)
 	if err != nil {
 		return storage.Product{}, err
 	}
@@ -123,7 +130,14 @@ func (s *ServiceProducts) Update(product storage.Product) (storage.Product, erro
 		return storage.Product{}, err
 	}
 
-	if err := validation.CheckUniqueCodeValue(s.Repository, product.Code_value); err != nil {
+	products, err := s.Repository.GetAll()
+	if err != nil {
+		if err.Error() != "no Products" {
+			return storage.Product{}, err
+		}
+	}
+
+	if err := validation.CheckUniqueCodeValue(products, product.Code_value); err != nil {
 		return storage.Product{}, err
 	}
 
@@ -131,7 +145,7 @@ func (s *ServiceProducts) Update(product storage.Product) (storage.Product, erro
 		return storage.Product{}, err
 	}
 
-	product, err := s.Repository.Update(product)
+	product, err = s.Repository.Update(product)
 	if err != nil {
 		return storage.Product{}, err
 	}
