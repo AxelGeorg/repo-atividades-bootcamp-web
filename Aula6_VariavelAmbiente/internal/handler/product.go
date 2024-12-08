@@ -4,7 +4,6 @@ import (
 	"aula4/internal/repository/storage"
 	"aula4/internal/service"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -225,8 +224,6 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println(updates)
 
 	product, err := c.Service.Patch(idStr, updates)
 	if err != nil {
