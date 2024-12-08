@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func getProductQuantity(service Service, ids []string) (int, []*storage.Product, error) {
+func GetProductQuantity(service Service, ids []string) (int, []*storage.Product, error) {
 	mapProdQtd := make(map[string]int)
 
 	var quantity int
@@ -42,7 +42,7 @@ func getProductQuantity(service Service, ids []string) (int, []*storage.Product,
 	return quantity, products, nil
 }
 
-func getProductQuantityTotal(service Service) (int, []*storage.Product, error) {
+func GetProductQuantityTotal(service Service) (int, []*storage.Product, error) {
 	products, err := service.GetAll()
 	if err != nil {
 		return 0.0, nil, err

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -53,62 +52,14 @@ func NewHandlerProducts(service service.Service) *ProductController {
 	}
 }
 
-func (c *ProductController) handleError(w http.ResponseWriter, err error, statusCode int) {
-	body := &ResponseBodyProduct{
-		Message: http.StatusText(statusCode) + " - " + err.Error(),
-		Data:    nil,
-		Error:   true,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(body)
-}
-
-func (c *ProductController) respondWithProduct(w http.ResponseWriter, message string, product storage.Product) {
-	dt := Data{
-		Id:           product.Id,
-		Name:         product.Name,
-		Code_value:   product.Code_value,
-		Is_published: *product.Is_published,
-		Expiration:   product.Expiration,
-		Quantity:     product.Quantity,
-		Price:        product.Price,
-	}
-
-	body := &ResponseBodyProduct{
-		Message: message,
-		Data:    &dt,
-		Error:   false,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(body)
-}
-
-func (c *ProductController) validateToken(w http.ResponseWriter, r *http.Request) bool {
-	token := r.Header.Get("Token")
-	if token == "" {
-		c.handleError(w, errors.New("authorization header is missing"), http.StatusUnauthorized)
-		return false
-	}
-
-	if token != os.Getenv("TOKEN") {
-		c.handleError(w, errors.New("Unauthorized"), http.StatusUnauthorized)
-		return false
-	}
-
-	return true
-}
-
 func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
 	var reqBody RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		c.handleError(w, errors.New("invalid request body"), http.StatusBadRequest)
+		ResponseWithError(w, errors.New("invalid request body"), http.StatusBadRequest)
 		return
 	}
 
@@ -128,7 +79,7 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 
 	productServ, err := c.Service.Create(product)
 	if err != nil {
-		c.handleError(w, err, http.StatusBadRequest)
+		ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -154,13 +105,13 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
 	var reqBody RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		c.handleError(w, errors.New("invalid request body"), http.StatusBadRequest)
+		ResponseWithError(w, errors.New("invalid request body"), http.StatusBadRequest)
 		return
 	}
 
@@ -180,22 +131,23 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 		if err.Error() == "product not found" {
 			productServ, err = c.Service.Create(product)
 			if err != nil {
-				c.handleError(w, errors.New("could not create product"), http.StatusInternalServerError)
+				ResponseWithError(w, errors.New("could not create product"), http.StatusInternalServerError)
 				return
 			}
-			c.respondWithProduct(w, "Product created", productServ)
+
+			RespondWithProduct(w, "Product created", productServ)
 			return
 		}
 
-		c.handleError(w, errors.New("could not update product"), http.StatusBadRequest)
+		ResponseWithError(w, errors.New("could not update product"), http.StatusBadRequest)
 		return
 	}
 
-	c.respondWithProduct(w, "Product updated", productServ)
+	RespondWithProduct(w, "Product updated", productServ)
 }
 
 func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
@@ -203,7 +155,7 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 
 	_, err := c.Service.GetById(idStr)
 	if err != nil {
-		c.handleError(w, errors.New("product not found"), http.StatusNotFound)
+		ResponseWithError(w, errors.New("product not found"), http.StatusNotFound)
 		return
 	}
 
@@ -229,20 +181,20 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
 	idStr := chi.URLParam(r, "id")
 
 	if _, err := c.Service.GetById(idStr); err != nil {
-		c.handleError(w, errors.New("product not found"), http.StatusNotFound)
+		ResponseWithError(w, errors.New("product not found"), http.StatusNotFound)
 		return
 	}
 
 	err := c.Service.Delete(idStr)
 	if err != nil {
-		c.handleError(w, errors.New("could not delete product"), http.StatusInternalServerError)
+		ResponseWithError(w, errors.New("could not delete product"), http.StatusInternalServerError)
 		return
 	}
 
@@ -258,7 +210,7 @@ func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
@@ -266,7 +218,7 @@ func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	products, err := c.Service.GetAll()
 	if err != nil {
-		c.handleError(w, errors.New("could not retrieve products"), http.StatusInternalServerError)
+		ResponseWithError(w, errors.New("could not retrieve products"), http.StatusInternalServerError)
 		return
 	}
 
@@ -274,7 +226,7 @@ func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
@@ -283,9 +235,9 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 	product, err := c.Service.GetById(idStr)
 	if err != nil {
 		if err.Error() == "product not found" {
-			c.handleError(w, errors.New("product not found"), http.StatusNotFound)
+			ResponseWithError(w, errors.New("product not found"), http.StatusNotFound)
 		} else {
-			c.handleError(w, errors.New("could not retrieve product"), http.StatusInternalServerError)
+			ResponseWithError(w, errors.New("could not retrieve product"), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -295,20 +247,20 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
 	priceStr := r.URL.Query().Get("price")
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
-		c.handleError(w, errors.New("invalid price format"), http.StatusBadRequest)
+		ResponseWithError(w, errors.New("invalid price format"), http.StatusBadRequest)
 		return
 	}
 
 	products, err := c.Service.SearchByPrice(price)
 	if err != nil {
-		c.handleError(w, errors.New("could not retrieve products"), http.StatusInternalServerError)
+		ResponseWithError(w, errors.New("could not retrieve products"), http.StatusInternalServerError)
 		return
 	}
 
@@ -317,7 +269,7 @@ func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request) {
-	if !c.validateToken(w, r) {
+	if !ValidateToken(w, r) {
 		return
 	}
 
@@ -330,7 +282,7 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 
 	totalPrice, products, err := c.Service.GetTotalPrice(ids)
 	if err != nil {
-		c.handleError(w, err, http.StatusBadRequest)
+		ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 

@@ -35,7 +35,7 @@ func (r *RepositoryProducts) GetAll() ([]*storage.Product, error) {
 	}
 
 	if len(products) == 0 {
-		return nil, errors.New("no products")
+		return nil, errors.New("no Products")
 	}
 
 	return products, nil

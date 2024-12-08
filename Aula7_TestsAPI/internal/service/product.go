@@ -52,9 +52,9 @@ func (s *ServiceProducts) GetTotalPrice(ids []string) (float64, []*storage.Produ
 	)
 
 	if len(ids) != 0 {
-		quantity, products, err = getProductQuantity(s, ids)
+		quantity, products, err = GetProductQuantity(s, ids)
 	} else {
-		quantity, products, err = getProductQuantityTotal(s)
+		quantity, products, err = GetProductQuantityTotal(s)
 	}
 
 	if err != nil {
@@ -119,6 +119,18 @@ func (s *ServiceProducts) Create(product storage.Product) (storage.Product, erro
 }
 
 func (s *ServiceProducts) Update(product storage.Product) (storage.Product, error) {
+	if err := validation.ValidateRequiredFields(product); err != nil {
+		return storage.Product{}, err
+	}
+
+	if err := validation.CheckUniqueCodeValue(s.Repository, product.Code_value); err != nil {
+		return storage.Product{}, err
+	}
+
+	if err := validation.ValidateDate(product.Expiration); err != nil {
+		return storage.Product{}, err
+	}
+
 	product, err := s.Repository.Update(product)
 	if err != nil {
 		return storage.Product{}, err

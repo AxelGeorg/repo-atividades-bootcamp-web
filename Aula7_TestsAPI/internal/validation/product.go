@@ -10,7 +10,11 @@ import (
 func CheckUniqueCodeValue(repo repository.Repository, codeValue string) error {
 	products, err := repo.GetAll()
 	if err != nil {
-		return err
+		if err.Error() != "no Products" {
+			return err
+		}
+
+		return nil
 	}
 
 	for _, product := range products {
