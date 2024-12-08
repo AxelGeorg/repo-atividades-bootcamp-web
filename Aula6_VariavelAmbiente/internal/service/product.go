@@ -1,8 +1,8 @@
-package model
+package service
 
 import (
 	"aula4/internal/repository"
-	"aula4/internal/service/storage"
+	"aula4/internal/repository/storage"
 	"errors"
 	"log"
 	"strings"
@@ -20,17 +20,17 @@ const (
 )
 
 type ServiceProducts struct {
-	Storage repository.RepositoryDB
+	Repository repository.Repository
 }
 
-func NewServiceProducts(storage repository.RepositoryDB) *ServiceProducts {
-	return &ServiceProducts{
-		Storage: storage,
+func NewServiceProducts(repository repository.Repository) ServiceProducts {
+	return ServiceProducts{
+		Repository: repository,
 	}
 }
 
 func (s *ServiceProducts) SearchByPrice(price float64) ([]*storage.Product, error) {
-	products, err := s.Storage.GetAll()
+	products, err := s.Repository.GetAll()
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (s *ServiceProducts) SearchByPrice(price float64) ([]*storage.Product, erro
 	return filteredProducts, nil
 }
 
-func (s *ServiceProducts) getProductQuantity(ids []string) (int, []*storage.Product, error) {
+func (s *ServiceProducts) GetProductQuantity(ids []string) (int, []*storage.Product, error) {
 	mapProdQtd := make(map[string]int)
 
 	var quantity int
@@ -81,7 +81,7 @@ func (s *ServiceProducts) getProductQuantity(ids []string) (int, []*storage.Prod
 	return quantity, products, nil
 }
 
-func (s *ServiceProducts) getProductQuantityTotal() (int, []*storage.Product, error) {
+func (s *ServiceProducts) GetProductQuantityTotal() (int, []*storage.Product, error) {
 	products, err := s.GetAll()
 	if err != nil {
 		return 0.0, nil, err
@@ -95,7 +95,7 @@ func (s *ServiceProducts) getProductQuantityTotal() (int, []*storage.Product, er
 	return quantity, products, nil
 }
 
-func (s *ServiceProducts) TotalPrice(ids []string) (float64, []*storage.Product, error) {
+func (s *ServiceProducts) GetTotalPrice(ids []string) (float64, []*storage.Product, error) {
 	var (
 		quantity int
 		products []*storage.Product
@@ -103,9 +103,9 @@ func (s *ServiceProducts) TotalPrice(ids []string) (float64, []*storage.Product,
 	)
 
 	if len(ids) != 0 {
-		quantity, products, err = s.getProductQuantity(ids)
+		quantity, products, err = s.GetProductQuantity(ids)
 	} else {
-		quantity, products, err = s.getProductQuantityTotal()
+		quantity, products, err = s.GetProductQuantityTotal()
 	}
 
 	if err != nil {
@@ -131,7 +131,7 @@ func (s *ServiceProducts) TotalPrice(ids []string) (float64, []*storage.Product,
 }
 
 func (s *ServiceProducts) GetAll() ([]*storage.Product, error) {
-	products, err := s.Storage.GetAll()
+	products, err := s.Repository.GetAll()
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (s *ServiceProducts) GetAll() ([]*storage.Product, error) {
 }
 
 func (s *ServiceProducts) GetById(id string) (*storage.Product, error) {
-	product, err := s.Storage.GetById(id)
+	product, err := s.Repository.GetById(id)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *ServiceProducts) GetById(id string) (*storage.Product, error) {
 }
 
 func (s *ServiceProducts) Create(product storage.Product) (storage.Product, error) {
-	product, err := s.Storage.Create(product)
+	product, err := s.Repository.Create(product)
 	if err != nil {
 		return storage.Product{}, err
 	}
@@ -158,7 +158,7 @@ func (s *ServiceProducts) Create(product storage.Product) (storage.Product, erro
 }
 
 func (s *ServiceProducts) Update(product storage.Product) (storage.Product, error) {
-	product, err := s.Storage.Update(product)
+	product, err := s.Repository.Update(product)
 	if err != nil {
 		return storage.Product{}, err
 	}
@@ -167,7 +167,7 @@ func (s *ServiceProducts) Update(product storage.Product) (storage.Product, erro
 }
 
 func (s *ServiceProducts) Patch(id string, updates map[string]interface{}) (*storage.Product, error) {
-	product, err := s.Storage.Patch(id, updates)
+	product, err := s.Repository.Patch(id, updates)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (s *ServiceProducts) Patch(id string, updates map[string]interface{}) (*sto
 }
 
 func (s *ServiceProducts) Delete(id string) error {
-	err := s.Storage.Delete(id)
+	err := s.Repository.Delete(id)
 	if err != nil {
 		return err
 	}

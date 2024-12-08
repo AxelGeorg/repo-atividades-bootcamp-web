@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"aula4/internal/service/model"
-	"aula4/internal/service/storage"
+	"aula4/internal/repository/storage"
+	"aula4/internal/service"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -44,12 +45,12 @@ type Data struct {
 }
 
 type ProductController struct {
-	ServiceProducts *model.ServiceProducts
+	Service service.Service
 }
 
-func NewControllerProducts(service *model.ServiceProducts) *ProductController {
+func NewHandlerProducts(service service.Service) *ProductController {
 	return &ProductController{
-		ServiceProducts: service,
+		Service: service,
 	}
 }
 
@@ -127,7 +128,7 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 		Price:        reqBody.Price,
 	}
 
-	productServ, err := c.ServiceProducts.Create(product)
+	productServ, err := c.Service.Create(product)
 	if err != nil {
 		code := http.StatusBadRequest
 		body := &ResponseBodyProduct{
@@ -135,6 +136,8 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 			Data:    nil,
 			Error:   true,
 		}
+
+		log.Println(err)
 
 		w.WriteHeader(code)
 		w.Header().Set("Content-Type", "application/json")
@@ -185,10 +188,10 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 		Price:        reqBody.Price,
 	}
 
-	productServ, err := c.ServiceProducts.Update(product)
+	productServ, err := c.Service.Update(product)
 	if err != nil {
 		if err.Error() == "product not found" {
-			productServ, err = c.ServiceProducts.Create(product)
+			productServ, err = c.Service.Create(product)
 			if err != nil {
 				c.handleError(w, "Could not create product", http.StatusInternalServerError)
 				return
@@ -211,7 +214,7 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 
 	idStr := chi.URLParam(r, "id")
 
-	_, err := c.ServiceProducts.Storage.GetById(idStr)
+	_, err := c.Service.GetById(idStr)
 	if err != nil {
 		c.handleError(w, "Product not found", http.StatusNotFound)
 		return
@@ -225,7 +228,7 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(updates)
 
-	product, err := c.ServiceProducts.Patch(idStr, updates)
+	product, err := c.Service.Patch(idStr, updates)
 	if err != nil {
 		switch err.Error() {
 		case "product not found":
@@ -247,12 +250,12 @@ func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
 
 	idStr := chi.URLParam(r, "id")
 
-	if _, exists := c.ServiceProducts.Storage.DB[idStr]; !exists {
+	if _, err := c.Service.GetById(idStr); err != nil {
 		c.handleError(w, "Product not found", http.StatusNotFound)
 		return
 	}
 
-	err := c.ServiceProducts.Delete(idStr)
+	err := c.Service.Delete(idStr)
 	if err != nil {
 		c.handleError(w, "Could not delete product", http.StatusInternalServerError)
 		return
@@ -276,7 +279,7 @@ func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	products, err := c.ServiceProducts.GetAll()
+	products, err := c.Service.GetAll()
 	if err != nil {
 		c.handleError(w, "Could not retrieve products", http.StatusInternalServerError)
 		return
@@ -292,7 +295,7 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 
 	idStr := chi.URLParam(r, "id")
 
-	product, err := c.ServiceProducts.GetById(idStr)
+	product, err := c.Service.GetById(idStr)
 	if err != nil {
 		if err.Error() == "product not found" {
 			c.handleError(w, "Product not found", http.StatusNotFound)
@@ -318,7 +321,7 @@ func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	products, err := c.ServiceProducts.SearchByPrice(price)
+	products, err := c.Service.SearchByPrice(price)
 	if err != nil {
 		c.handleError(w, "Could not retrieve products", http.StatusInternalServerError)
 		return
@@ -340,7 +343,7 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 		ids = strings.Split(listIds, ",")
 	}
 
-	totalPrice, products, err := c.ServiceProducts.TotalPrice(ids)
+	totalPrice, products, err := c.Service.GetTotalPrice(ids)
 	if err != nil {
 		c.handleError(w, err.Error(), http.StatusBadRequest)
 		return

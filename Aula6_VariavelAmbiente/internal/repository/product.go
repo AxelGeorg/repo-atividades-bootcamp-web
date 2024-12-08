@@ -1,68 +1,69 @@
 package repository
 
 import (
-	"aula4/internal/service/storage"
+	"aula4/internal/repository/storage"
 	"errors"
 
 	"github.com/google/uuid"
 )
 
-type RepositoryDB struct {
-	DB map[string]*storage.Product
+type RepositoryProducts struct {
+	Storage storage.Storage
 }
 
-func NewMeliDB() RepositoryDB {
-	return RepositoryDB{
-		DB: make(map[string]*storage.Product),
+func NewRepositoryProducts(storage storage.Storage) RepositoryProducts {
+	return RepositoryProducts{
+		Storage: storage,
 	}
 }
 
-func (r *RepositoryDB) GetById(id string) (*storage.Product, error) {
-	product, exists := r.DB[id]
-	if !exists {
+func (r *RepositoryProducts) GetById(id string) (*storage.Product, error) {
+	product, err := r.Storage.ReadProductById(id)
+	if err != nil {
+		return nil, err
+	}
+	if product == nil {
 		return nil, errors.New("product not found")
 	}
 	return product, nil
 }
 
-func (r *RepositoryDB) GetAll() ([]*storage.Product, error) {
-	products := make([]*storage.Product, 0, len(r.DB))
-
-	if len(r.DB) == 0 {
-		return nil, errors.New("no products available")
+func (r *RepositoryProducts) GetAll() ([]*storage.Product, error) {
+	products, err := r.Storage.ReadAllProductsToFile()
+	if err != nil {
+		return nil, err
 	}
 
-	for _, product := range r.DB {
-		products = append(products, product)
+	if len(products) == 0 {
+		return nil, errors.New("no products")
 	}
+
 	return products, nil
 }
 
-func (r *RepositoryDB) Create(product storage.Product) (storage.Product, error) {
+func (r *RepositoryProducts) Create(product storage.Product) (storage.Product, error) {
 	id := uuid.New()
 	product.Id = id.String()
 
-	if _, exists := r.DB[product.Id]; exists {
-		return storage.Product{}, errors.New("product already exists")
+	if err := r.Storage.SaveProduct(&product); err != nil {
+		return storage.Product{}, err
 	}
 
-	r.DB[product.Id] = &product
 	return product, nil
 }
 
-func (r *RepositoryDB) Update(product storage.Product) (storage.Product, error) {
-	if _, exists := r.DB[product.Id]; !exists {
-		return storage.Product{}, errors.New("product not found")
+func (r *RepositoryProducts) Update(product storage.Product) (storage.Product, error) {
+	if err := r.Storage.UpdateProduct(&product); err != nil {
+		return storage.Product{}, err
 	}
 
-	r.DB[product.Id] = &product
 	return product, nil
 }
 
-func (r *RepositoryDB) Patch(id string, updates map[string]interface{}) (*storage.Product, error) {
-	product, exists := r.DB[id]
-	if !exists {
-		return nil, errors.New("product not found")
+func (r *RepositoryProducts) Patch(id string, updates map[string]interface{}) (*storage.Product, error) {
+	product, err := r.GetById(id)
+	if err != nil {
+		return nil, err
 	}
 
 	if name, ok := updates["name"].(string); ok {
@@ -84,14 +85,13 @@ func (r *RepositoryDB) Patch(id string, updates map[string]interface{}) (*storag
 		product.Price = price
 	}
 
+	if err := r.Storage.UpdateProduct(product); err != nil {
+		return nil, err
+	}
+
 	return product, nil
 }
 
-func (r *RepositoryDB) Delete(id string) error {
-	if _, exists := r.DB[id]; !exists {
-		return errors.New("product not found")
-	}
-
-	delete(r.DB, id)
-	return nil
+func (r *RepositoryProducts) Delete(id string) error {
+	return r.Storage.DeleteProduct(id)
 }
