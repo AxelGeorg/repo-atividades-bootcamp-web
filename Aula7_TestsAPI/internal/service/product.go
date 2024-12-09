@@ -109,7 +109,7 @@ func (s *ServiceProducts) Create(product storage.Product) (storage.Product, erro
 		}
 	}
 
-	if err := utils.CheckUniqueCodeValue(products, product.Code_value); err != nil {
+	if err := utils.CheckUniqueCodeValue(products, product); err != nil {
 		return storage.Product{}, err
 	}
 
@@ -137,7 +137,7 @@ func (s *ServiceProducts) Update(product storage.Product) (storage.Product, erro
 		}
 	}
 
-	if err := utils.CheckUniqueCodeValue(products, product.Code_value); err != nil {
+	if err := utils.CheckUniqueCodeValue(products, product); err != nil {
 		return storage.Product{}, err
 	}
 

@@ -12,9 +12,13 @@ const (
 	MessageProductDeleted = "Product deleted"
 )
 
-func CheckUniqueCodeValue(products []*storage.Product, codeValue string) error {
+func CheckUniqueCodeValue(products []*storage.Product, prod storage.Product) error {
 	for _, product := range products {
-		if product.Code_value == codeValue {
+		if product.Id == prod.Id {
+			continue
+		}
+
+		if product.Code_value == prod.Code_value {
 			return errors.New("the code_value must be unique")
 		}
 	}

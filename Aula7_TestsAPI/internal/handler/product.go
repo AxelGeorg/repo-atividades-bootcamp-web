@@ -97,7 +97,6 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
-	//idStr := chi.URLParam(r, "id")
 	product := storage.Product{
 		Id:           idStr,
 		Name:         reqBody.Name,
@@ -134,7 +133,6 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
-	//idStr := chi.URLParam(r, "id")
 	_, err := c.Service.GetById(idStr)
 	if err != nil {
 		ResponseWithError(w, err, http.StatusNotFound)
@@ -167,7 +165,6 @@ func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
-	//idStr := chi.URLParam(r, "id")
 	if _, err := c.Service.GetById(idStr); err != nil {
 		ResponseWithError(w, err, http.StatusNotFound)
 		return
@@ -204,7 +201,6 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
-	//idStr := chi.URLParam(r, "id")
 	product, err := c.Service.GetById(idStr)
 	if err != nil {
 		if err.Error() == "product not found" {

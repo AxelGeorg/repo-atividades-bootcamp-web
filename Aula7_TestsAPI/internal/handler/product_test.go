@@ -87,7 +87,7 @@ func TestUpdateProduct(t *testing.T) {
 	req.Header.Set("Token", "1234")
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(productHandler.Update)
+	handler := http.HandlerFunc(productHandler.UpdateOrCreate)
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
@@ -149,8 +149,6 @@ func TestGetById(t *testing.T) {
 		Price:        newProduct.Price,
 	}
 
-	t.Logf(productID)
-
 	req, _ := http.NewRequest("GET", "/products/"+productID, nil)
 	req.Header.Set("Token", "1234")
 	rr := httptest.NewRecorder()
@@ -162,12 +160,136 @@ func TestGetById(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	t.Logf(rr.Body.String())
+	var response storage.Product
+	json.NewDecoder(rr.Body).Decode(&response)
+
+	if response.Name != newProduct.Name {
+		t.Errorf("handler returned unexpected body: got %v want %v", response.Name, newProduct.Name)
+	}
+}
+
+func TestGetAll(t *testing.T) {
+	mockRepo := repository.NewRepositoryProductsMock()
+	productService := service.NewServiceProducts(&mockRepo)
+	productHandler := NewHandlerProducts(&productService)
+
+	os.Setenv("TOKEN", "1234")
+
+	mockRepo.Products["1"] = &storage.Product{
+		Id:           "1",
+		Name:         "Product A",
+		Quantity:     5,
+		Code_value:   "123yy",
+		Is_published: boolPtr(true),
+		Expiration:   "01/01/2025",
+		Price:        10.0,
+	}
+
+	mockRepo.Products["2"] = &storage.Product{
+		Id:           "2",
+		Name:         "Product B",
+		Quantity:     10,
+		Code_value:   "456yy",
+		Is_published: boolPtr(false),
+		Expiration:   "01/01/2026",
+		Price:        20.0,
+	}
+
+	req, _ := http.NewRequest("GET", "/products", nil)
+	req.Header.Set("Token", "1234")
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(productHandler.GetAll)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	var response []storage.Product
+	json.NewDecoder(rr.Body).Decode(&response)
+
+	if len(response) != 2 {
+		t.Errorf("expected 2 products, got %v", len(response))
+	}
+}
+
+func TestPatchProduct(t *testing.T) {
+	mockRepo := repository.NewRepositoryProductsMock()
+	productService := service.NewServiceProducts(&mockRepo)
+	productHandler := NewHandlerProducts(&productService)
+
+	os.Setenv("TOKEN", "1234")
+
+	productID := "1"
+	mockRepo.Products[productID] = &storage.Product{
+		Id:           productID,
+		Name:         "Product A",
+		Quantity:     5,
+		Code_value:   "123yy",
+		Is_published: boolPtr(true),
+		Expiration:   "01/01/2025",
+		Price:        10.0,
+	}
+
+	patchData := map[string]interface{}{
+		"name": "Product AA",
+	}
+
+	jsonBody, _ := json.Marshal(patchData)
+
+	req, _ := http.NewRequest("PATCH", "/products/"+productID, strings.NewReader(string(jsonBody)))
+	req.Header.Set("Token", "1234")
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(productHandler.Update)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
 
 	var response ResponseBodyProduct
 	json.NewDecoder(rr.Body).Decode(&response)
 
-	if response.Data.Name != newProduct.Name {
-		t.Errorf("handler returned unexpected body: got %v want %v", response.Data.Name, newProduct.Name)
+	if response.Data.Name != patchData["name"] {
+		t.Errorf("handler returned unexpected name: got %v want %v", response.Data.Name, patchData["name"])
+	}
+}
+
+func TestDeleteProduct(t *testing.T) {
+	mockRepo := repository.NewRepositoryProductsMock()
+	productService := service.NewServiceProducts(&mockRepo)
+	productHandler := NewHandlerProducts(&productService)
+
+	os.Setenv("TOKEN", "1234")
+
+	productID := "1"
+	mockRepo.Products[productID] = &storage.Product{
+		Id:           productID,
+		Name:         "Product A",
+		Quantity:     5,
+		Code_value:   "123yy",
+		Is_published: boolPtr(true),
+		Expiration:   "01/01/2025",
+		Price:        10.0,
+	}
+
+	req, _ := http.NewRequest("DELETE", "/products/"+productID, nil)
+	req.Header.Set("Token", "1234")
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(productHandler.Delete)
+	handler.ServeHTTP(rr, req)
+
+	t.Logf(rr.Body.String())
+
+	if status := rr.Code; status != http.StatusNoContent {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	_, exists := mockRepo.Products[productID]
+	if exists {
+		t.Errorf("Product %v should have been deleted", productID)
 	}
 }

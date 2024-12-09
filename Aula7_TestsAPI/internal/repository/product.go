@@ -81,7 +81,7 @@ func (r *RepositoryProducts) Patch(id string, updates map[string]interface{}) (*
 			}
 		}
 
-		if err := utils.CheckUniqueCodeValue(products, product.Code_value); err != nil {
+		if err := utils.CheckUniqueCodeValue(products, *product); err != nil {
 			return nil, err
 		}
 
