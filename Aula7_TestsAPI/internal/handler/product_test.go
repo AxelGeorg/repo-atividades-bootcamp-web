@@ -5,6 +5,7 @@ import (
 	"aula4/internal/repository/storage"
 	"aula4/internal/service"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +15,135 @@ import (
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+func TestCreateProducttttt(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        RequestBodyProduct
+		expectedErr  error
+		expectedCode int
+	}{
+		{
+			name: "Successful creation",
+			input: RequestBodyProduct{
+				Name:         "Product A",
+				Quantity:     5,
+				Code_value:   "123yy",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			expectedErr:  nil,
+			expectedCode: http.StatusCreated,
+		},
+		{
+			name: "Missing name",
+			input: RequestBodyProduct{
+				Quantity:     5,
+				Code_value:   "123yy",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			expectedErr:  errors.New("name is required"),
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Duplicated code_value",
+			input: RequestBodyProduct{
+				Name:         "Product B",
+				Quantity:     5,
+				Code_value:   "123yy", // Código que já existe
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			expectedErr:  errors.New("the code_value must be unique"),
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid expiration date",
+			input: RequestBodyProduct{
+				Name:         "Product C",
+				Quantity:     5,
+				Code_value:   "123zz",
+				Is_published: boolPtr(true),
+				Expiration:   "invalid-date", // Data inválida
+				Price:        10.0,
+			},
+			expectedErr:  errors.New("invalid date"),
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Negative price",
+			input: RequestBodyProduct{
+				Name:         "Product D",
+				Quantity:     5,
+				Code_value:   "123xx",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        -5.0, // Preço negativo
+			},
+			expectedErr:  errors.New("price must be non-negative"),
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := repository.NewRepositoryProductsMock()
+			productService := service.NewServiceProducts(&mockRepo)
+			productHandler := NewHandlerProducts(&productService)
+			os.Setenv("TOKEN", "1234")
+
+			// Adiciona um produto para verificar a duplicação
+			if tt.name == "Duplicated code_value" {
+				mockRepo.Products["1"] = &storage.Product{
+					Id:           "1",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				}
+			}
+
+			jsonBody, _ := json.Marshal(tt.input)
+			req, _ := http.NewRequest("POST", "/products", strings.NewReader(string(jsonBody)))
+			req.Header.Set("Token", "1234")
+			rr := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(productHandler.Create)
+			handler.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
+
+			if tt.expectedErr != nil {
+
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
+
+				if response.Error == false {
+					t.Errorf("expected error but got none")
+				}
+
+				if response.Data != nil {
+					t.Errorf("expected no data but got %v", response.Data)
+				}
+			} else {
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
+
+				if response.Data.Name != tt.input.Name {
+					t.Errorf("handler returned unexpected body: got %v want %v", response.Data.Name, tt.input.Name)
+				}
+			}
+		})
+	}
 }
 
 func TestCreateProduct(t *testing.T) {
