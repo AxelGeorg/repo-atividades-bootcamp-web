@@ -466,7 +466,6 @@ func TestGetAll(t *testing.T) {
 			mockRepo := repository.NewRepositoryProductsMock()
 			for id, product := range tt.initialData {
 				mockRepo.Products[id] = product
-				t.Log(product)
 			}
 
 			productService := service.NewServiceProducts(&mockRepo)
@@ -479,8 +478,6 @@ func TestGetAll(t *testing.T) {
 
 			handler := http.HandlerFunc(productHandler.GetAll)
 			handler.ServeHTTP(rr, req)
-
-			t.Log(rr.Body)
 
 			if status := rr.Code; status != tt.expectedCode {
 				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
