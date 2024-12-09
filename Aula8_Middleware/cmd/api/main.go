@@ -19,10 +19,10 @@ func main() {
 
 	rt := chi.NewRouter()
 
-	rt.Route("/products", func(r chi.Router) {
-		r.Use(middleware.ValidateToken)
-		r.Use(middleware.LoggingMiddleware)
+	rt.Use(middleware.LoggingMiddleware)
+	rt.Use(middleware.ValidateToken)
 
+	rt.Route("/products", func(r chi.Router) {
 		r.Get("/", hd.GetAll)
 		r.Get("/{id}", hd.GetById)
 		r.Get("/search", hd.Search)
