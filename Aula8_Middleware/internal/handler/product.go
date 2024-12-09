@@ -11,36 +11,6 @@ import (
 	"strings"
 )
 
-type RequestBodyProduct struct {
-	Name         string  `json:"name"`
-	Quantity     int     `json:"quantity"`
-	Code_value   string  `json:"code_value"`
-	Is_published *bool   `json:"is_published"`
-	Expiration   string  `json:"expiration"`
-	Price        float64 `json:"price"`
-}
-
-type ResponseBodyProduct struct {
-	Message string `json:"message"`
-	Data    *Data  `json:"data,omitempty"`
-	Error   bool   `json:"error"`
-}
-
-type ResponseBodyTotalPrice struct {
-	Products   []*Data `json:"products,omitempty"`
-	TotalPrice float64 `json:"total_price"`
-}
-
-type Data struct {
-	Id           string  `json:"id"`
-	Name         string  `json:"name"`
-	Quantity     int     `json:"quantity"`
-	Code_value   string  `json:"code_value"`
-	Is_published bool    `json:"is_published"`
-	Expiration   string  `json:"expiration"`
-	Price        float64 `json:"price"`
-}
-
 type ProductController struct {
 	Service service.Service
 }
@@ -52,9 +22,9 @@ func NewHandlerProducts(service service.Service) *ProductController {
 }
 
 func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
-	var reqBody RequestBodyProduct
+	var reqBody utils.RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -74,24 +44,24 @@ func (c *ProductController) Create(w http.ResponseWriter, r *http.Request) {
 
 	productServ, err := c.Service.Create(product)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
-	RespondWithProduct(w, &productServ, http.StatusCreated, utils.MessageProductCreated)
+	utils.RespondWithProduct(w, &productServ, http.StatusCreated, utils.MessageProductCreated)
 }
 
 func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Request) {
-	var reqBody RequestBodyProduct
+	var reqBody utils.RequestBodyProduct
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
 	err := utils.ValidateUUID(idStr)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 	}
 
 	product := storage.Product{
@@ -109,37 +79,37 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 		if err.Error() == "product not found" {
 			productServ, err = c.Service.Create(product)
 			if err != nil {
-				ResponseWithError(w, err, http.StatusInternalServerError)
+				utils.ResponseWithError(w, err, http.StatusInternalServerError)
 				return
 			}
 
-			RespondWithProduct(w, &productServ, http.StatusCreated, utils.MessageProductCreated)
+			utils.RespondWithProduct(w, &productServ, http.StatusCreated, utils.MessageProductCreated)
 			return
 		}
 
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
-	RespondWithProduct(w, &productServ, http.StatusOK, utils.MessageProductUpdated)
+	utils.RespondWithProduct(w, &productServ, http.StatusOK, utils.MessageProductUpdated)
 }
 
 func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/products/"):]
 	err := utils.ValidateUUID(idStr)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 	}
 
 	_, err = c.Service.GetById(idStr)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusNotFound)
+		utils.ResponseWithError(w, err, http.StatusNotFound)
 		return
 	}
 
 	var updates map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -147,41 +117,41 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err.Error() {
 		case "product not found":
-			ResponseWithError(w, err, http.StatusNotFound)
+			utils.ResponseWithError(w, err, http.StatusNotFound)
 		default:
-			ResponseWithError(w, err, http.StatusInternalServerError)
+			utils.ResponseWithError(w, err, http.StatusInternalServerError)
 		}
 		return
 	}
 
-	RespondWithProduct(w, product, http.StatusOK, utils.MessageProductUpdated)
+	utils.RespondWithProduct(w, product, http.StatusOK, utils.MessageProductUpdated)
 }
 
 func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/products/"):]
 	err := utils.ValidateUUID(idStr)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 	}
 
 	if _, err := c.Service.GetById(idStr); err != nil {
-		ResponseWithError(w, err, http.StatusNotFound)
+		utils.ResponseWithError(w, err, http.StatusNotFound)
 		return
 	}
 
 	err = c.Service.Delete(idStr)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusInternalServerError)
+		utils.ResponseWithError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	RespondWithProduct(w, nil, http.StatusNoContent, utils.MessageProductDeleted)
+	utils.RespondWithProduct(w, nil, http.StatusNoContent, utils.MessageProductDeleted)
 }
 
 func (c *ProductController) GetAll(w http.ResponseWriter, r *http.Request) {
 	products, err := c.Service.GetAll()
 	if err != nil {
-		ResponseWithError(w, err, http.StatusInternalServerError)
+		utils.ResponseWithError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -194,16 +164,16 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/products/"):]
 	err := utils.ValidateUUID(idStr)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 	}
 
 	var product *storage.Product
 	product, err = c.Service.GetById(idStr)
 	if err != nil {
 		if err.Error() == "product not found" {
-			ResponseWithError(w, err, http.StatusNotFound)
+			utils.ResponseWithError(w, err, http.StatusNotFound)
 		} else {
-			ResponseWithError(w, err, http.StatusInternalServerError)
+			utils.ResponseWithError(w, err, http.StatusInternalServerError)
 		}
 		return
 	}
@@ -217,13 +187,13 @@ func (c *ProductController) Search(w http.ResponseWriter, r *http.Request) {
 	priceStr := r.URL.Query().Get("price")
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
-		ResponseWithError(w, errors.New("invalid price format"), http.StatusBadRequest)
+		utils.ResponseWithError(w, errors.New("invalid price format"), http.StatusBadRequest)
 		return
 	}
 
 	products, err := c.Service.SearchByPrice(price)
 	if err != nil {
-		ResponseWithError(w, errors.New("could not retrieve products"), http.StatusInternalServerError)
+		utils.ResponseWithError(w, errors.New("could not retrieve products"), http.StatusInternalServerError)
 		return
 	}
 
@@ -242,13 +212,13 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 
 	totalPrice, products, err := c.Service.GetTotalPrice(ids)
 	if err != nil {
-		ResponseWithError(w, err, http.StatusBadRequest)
+		utils.ResponseWithError(w, err, http.StatusBadRequest)
 		return
 	}
 
-	var productsResponse []*Data
+	var productsResponse []*utils.Data
 	for _, product := range products {
-		dt := Data{
+		dt := utils.Data{
 			Id:           product.Id,
 			Name:         product.Name,
 			Code_value:   product.Code_value,
@@ -261,7 +231,7 @@ func (c *ProductController) ConsumerPrice(w http.ResponseWriter, r *http.Request
 		productsResponse = append(productsResponse, &dt)
 	}
 
-	body := &ResponseBodyTotalPrice{
+	body := &utils.ResponseBodyTotalPrice{
 		Products:   productsResponse,
 		TotalPrice: totalPrice,
 	}

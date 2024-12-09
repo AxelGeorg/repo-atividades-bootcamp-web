@@ -21,6 +21,7 @@ func main() {
 
 	rt.Route("/products", func(r chi.Router) {
 		r.Use(middleware.ValidateToken)
+		r.Use(middleware.LoggingMiddleware)
 
 		r.Get("/", hd.GetAll)
 		r.Get("/{id}", hd.GetById)

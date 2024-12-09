@@ -5,6 +5,7 @@ import (
 	"aula4/internal/repository"
 	"aula4/internal/repository/storage"
 	"aula4/internal/service"
+	"aula4/internal/utils"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -21,13 +22,13 @@ func boolPtr(b bool) *bool {
 func TestCreateProduct(t *testing.T) {
 	tests := []struct {
 		name         string
-		input        RequestBodyProduct
+		input        utils.RequestBodyProduct
 		expectedErr  error
 		expectedCode int
 	}{
 		{
 			name: "Successful creation",
-			input: RequestBodyProduct{
+			input: utils.RequestBodyProduct{
 				Name:         "Product A",
 				Quantity:     5,
 				Code_value:   "123yy",
@@ -40,7 +41,7 @@ func TestCreateProduct(t *testing.T) {
 		},
 		{
 			name: "Missing name",
-			input: RequestBodyProduct{
+			input: utils.RequestBodyProduct{
 				Quantity:     5,
 				Code_value:   "123yy",
 				Is_published: boolPtr(true),
@@ -52,7 +53,7 @@ func TestCreateProduct(t *testing.T) {
 		},
 		{
 			name: "Duplicated code_value",
-			input: RequestBodyProduct{
+			input: utils.RequestBodyProduct{
 				Name:         "Product B",
 				Quantity:     5,
 				Code_value:   "123yy",
@@ -65,7 +66,7 @@ func TestCreateProduct(t *testing.T) {
 		},
 		{
 			name: "Invalid expiration date",
-			input: RequestBodyProduct{
+			input: utils.RequestBodyProduct{
 				Name:         "Product C",
 				Quantity:     5,
 				Code_value:   "123zz",
@@ -79,7 +80,7 @@ func TestCreateProduct(t *testing.T) {
 		{
 			name: "Negative price",
 
-			input: RequestBodyProduct{
+			input: utils.RequestBodyProduct{
 				Name:         "Product D",
 				Quantity:     5,
 				Code_value:   "123xx",
@@ -125,7 +126,7 @@ func TestCreateProduct(t *testing.T) {
 
 			if tt.expectedErr != nil {
 
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Error == false {
@@ -136,7 +137,7 @@ func TestCreateProduct(t *testing.T) {
 					t.Errorf("expected no data but got %v", response.Data)
 				}
 			} else {
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Data.Name != tt.input.Name {
@@ -151,7 +152,7 @@ func TestUpdateProduct(t *testing.T) {
 	tests := []struct {
 		name         string
 		productID    string
-		updates      RequestBodyProduct
+		updates      utils.RequestBodyProduct
 		initialData  map[string]*storage.Product
 		expectedErr  error
 		expectedCode int
@@ -159,7 +160,7 @@ func TestUpdateProduct(t *testing.T) {
 		{
 			name:      "Successful update",
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
-			updates: RequestBodyProduct{
+			updates: utils.RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
 				Code_value:   "123yy",
@@ -184,7 +185,7 @@ func TestUpdateProduct(t *testing.T) {
 		{
 			name:      "Product not found",
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df013",
-			updates: RequestBodyProduct{
+			updates: utils.RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
 				Code_value:   "123yy",
@@ -199,7 +200,7 @@ func TestUpdateProduct(t *testing.T) {
 		{
 			name:      "Invalid expiration date format",
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
-			updates: RequestBodyProduct{
+			updates: utils.RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
 				Code_value:   "123yy",
@@ -224,7 +225,7 @@ func TestUpdateProduct(t *testing.T) {
 		{
 			name:      "Duplicated code_value",
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
-			updates: RequestBodyProduct{
+			updates: utils.RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
 				Code_value:   "123xx",
@@ -258,7 +259,7 @@ func TestUpdateProduct(t *testing.T) {
 		{
 			name:      "Missing code_value",
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
-			updates: RequestBodyProduct{
+			updates: utils.RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
 				Is_published: boolPtr(true),
@@ -305,7 +306,7 @@ func TestUpdateProduct(t *testing.T) {
 			}
 
 			if tt.expectedErr != nil {
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Error == false {
@@ -316,7 +317,7 @@ func TestUpdateProduct(t *testing.T) {
 					t.Errorf("expected no data but got %v", response.Data)
 				}
 			} else {
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Data.Name != tt.updates.Name {
@@ -421,7 +422,7 @@ func TestGetById(t *testing.T) {
 			}
 
 			if tt.expectedErr != nil {
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Error == false {
@@ -504,7 +505,7 @@ func TestGetAll(t *testing.T) {
 			}
 
 			if tt.expectedCount == 0 {
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Error == false {
@@ -607,7 +608,7 @@ func TestPatchProduct(t *testing.T) {
 			}
 
 			if tt.expectedErr != nil {
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Error == false {
@@ -618,7 +619,7 @@ func TestPatchProduct(t *testing.T) {
 					t.Errorf("expected no data but got %v", response.Data)
 				}
 			} else {
-				var response ResponseBodyProduct
+				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
 				if response.Data.Name != tt.expectedName {
