@@ -70,7 +70,7 @@ func (r *RepositoryProducts) Patch(id string, updates map[string]interface{}) (*
 	if name, ok := updates["name"].(string); ok {
 		product.Name = name
 	}
-	if quantity, ok := updates["quantity"].(int); ok {
+	if quantity, err := ToInt(updates["quantity"]); err == nil {
 		product.Quantity = quantity
 	}
 	if codeValue, ok := updates["code_value"].(string); ok {
@@ -87,8 +87,8 @@ func (r *RepositoryProducts) Patch(id string, updates map[string]interface{}) (*
 
 		product.Code_value = codeValue
 	}
-	if isPublished, ok := updates["is_published"].(bool); ok {
-		product.Is_published = &isPublished
+	if isPublished, err := ToBool(updates["is_published"]); err == nil {
+		product.Is_published = isPublished
 	}
 	if expiration, ok := updates["expiration"].(string); ok {
 		if err := utils.ValidateDate(product.Expiration); err != nil {
