@@ -124,7 +124,7 @@ func RespondWithProduct(w http.ResponseWriter, product *storage.Product, statusC
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("ßContent-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(body)
 }

@@ -20,7 +20,6 @@ func ValidateToken(next http.Handler) http.Handler {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 		next.ServeHTTP(w, r)
 	})
 }
