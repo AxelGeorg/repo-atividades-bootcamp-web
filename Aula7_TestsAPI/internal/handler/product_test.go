@@ -282,8 +282,6 @@ func TestDeleteProduct(t *testing.T) {
 	handler := http.HandlerFunc(productHandler.Delete)
 	handler.ServeHTTP(rr, req)
 
-	t.Logf(rr.Body.String())
-
 	if status := rr.Code; status != http.StatusNoContent {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
