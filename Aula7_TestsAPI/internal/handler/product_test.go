@@ -17,7 +17,7 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
-func TestCreateProducttttt(t *testing.T) {
+func TestCreateProduct(t *testing.T) {
 	tests := []struct {
 		name         string
 		input        RequestBodyProduct
@@ -54,7 +54,7 @@ func TestCreateProducttttt(t *testing.T) {
 			input: RequestBodyProduct{
 				Name:         "Product B",
 				Quantity:     5,
-				Code_value:   "123yy", // Código que já existe
+				Code_value:   "123yy",
 				Is_published: boolPtr(true),
 				Expiration:   "01/01/2025",
 				Price:        10.0,
@@ -69,7 +69,7 @@ func TestCreateProducttttt(t *testing.T) {
 				Quantity:     5,
 				Code_value:   "123zz",
 				Is_published: boolPtr(true),
-				Expiration:   "invalid-date", // Data inválida
+				Expiration:   "invalid-date",
 				Price:        10.0,
 			},
 			expectedErr:  errors.New("invalid date"),
@@ -83,7 +83,7 @@ func TestCreateProducttttt(t *testing.T) {
 				Code_value:   "123xx",
 				Is_published: boolPtr(true),
 				Expiration:   "01/01/2025",
-				Price:        -5.0, // Preço negativo
+				Price:        -5.0,
 			},
 			expectedErr:  errors.New("price must be non-negative"),
 			expectedCode: http.StatusBadRequest,
@@ -97,7 +97,6 @@ func TestCreateProducttttt(t *testing.T) {
 			productHandler := NewHandlerProducts(&productService)
 			os.Setenv("TOKEN", "1234")
 
-			// Adiciona um produto para verificar a duplicação
 			if tt.name == "Duplicated code_value" {
 				mockRepo.Products["1"] = &storage.Product{
 					Id:           "1",
@@ -146,278 +145,545 @@ func TestCreateProducttttt(t *testing.T) {
 	}
 }
 
-func TestCreateProduct(t *testing.T) {
-	mockRepo := repository.NewRepositoryProductsMock()
-	productService := service.NewServiceProducts(&mockRepo)
-	productHandler := NewHandlerProducts(&productService)
-
-	os.Setenv("TOKEN", "1234")
-
-	newProduct := RequestBodyProduct{Name: "Product A", Quantity: 5, Code_value: "123yy", Is_published: boolPtr(true), Expiration: "01/01/2025", Price: 10.0}
-	jsonBody, _ := json.Marshal(newProduct)
-
-	req, _ := http.NewRequest("POST", "/products", strings.NewReader(string(jsonBody)))
-	req.Header.Set("Token", "1234")
-	rr := httptest.NewRecorder()
-
-	handler := http.HandlerFunc(productHandler.Create)
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v"+rr.Body.String(), status, http.StatusCreated)
-	}
-
-	var response ResponseBodyProduct
-	json.NewDecoder(rr.Body).Decode(&response)
-
-	if response.Data.Name != newProduct.Name {
-		t.Errorf("handler returned unexpected body: got %v want %v", response.Data.Name, newProduct.Name)
-	}
-}
-
 func TestUpdateProduct(t *testing.T) {
-	mockRepo := repository.NewRepositoryProductsMock()
-	productService := service.NewServiceProducts(&mockRepo)
-	productHandler := NewHandlerProducts(&productService)
-
-	os.Setenv("TOKEN", "1234")
-
-	productID := "1"
-	newProduct := RequestBodyProduct{
-		Name:         "Product A",
-		Quantity:     5,
-		Code_value:   "123yy",
-		Is_published: boolPtr(true),
-		Expiration:   "01/01/2025",
-		Price:        10.0,
+	tests := []struct {
+		name         string
+		productID    string
+		updates      RequestBodyProduct
+		initialData  map[string]*storage.Product
+		expectedErr  error
+		expectedCode int
+	}{
+		{
+			name:      "Successful update",
+			productID: "1",
+			updates: RequestBodyProduct{
+				Name:         "Product AA",
+				Quantity:     5,
+				Code_value:   "123yy",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Code_value:   "123yy",
+					Name:         "Product A",
+					Quantity:     5,
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  nil,
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:      "Product not found",
+			productID: "2",
+			updates: RequestBodyProduct{
+				Name:         "Product AA",
+				Quantity:     5,
+				Code_value:   "123yy",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			initialData:  nil,
+			expectedErr:  nil,
+			expectedCode: http.StatusCreated,
+		},
+		{
+			name:      "Invalid expiration date format",
+			productID: "1",
+			updates: RequestBodyProduct{
+				Name:         "Product AA",
+				Quantity:     5,
+				Code_value:   "123yy",
+				Is_published: boolPtr(true),
+				Expiration:   "invalid-date",
+				Price:        10.0,
+			},
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Code_value:   "123yy",
+					Name:         "Product A",
+					Quantity:     5,
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  errors.New("invalid date"),
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name:      "Duplicated code_value",
+			productID: "1",
+			updates: RequestBodyProduct{
+				Name:         "Product AA",
+				Quantity:     5,
+				Code_value:   "123xx",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Code_value:   "123yy",
+					Name:         "Product A",
+					Quantity:     5,
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+				"2": {
+					Id:           "2",
+					Code_value:   "123xx",
+					Name:         "Product B",
+					Quantity:     3,
+					Is_published: boolPtr(false),
+					Expiration:   "01/01/2026",
+					Price:        15.0,
+				},
+			},
+			expectedErr:  errors.New("the code_value must be unique"),
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name:      "Missing code_value",
+			productID: "1",
+			updates: RequestBodyProduct{
+				Name:         "Product AA",
+				Quantity:     5,
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Code_value:   "123yy",
+					Name:         "Product A",
+					Quantity:     5,
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  errors.New("code_value is required"),
+			expectedCode: http.StatusBadRequest,
+		},
 	}
 
-	mockRepo.Products[productID] = &storage.Product{
-		Id:           productID,
-		Name:         newProduct.Name,
-		Quantity:     newProduct.Quantity,
-		Code_value:   newProduct.Code_value,
-		Is_published: newProduct.Is_published,
-		Expiration:   newProduct.Expiration,
-		Price:        newProduct.Price,
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := repository.NewRepositoryProductsMock()
+			for id, product := range tt.initialData {
+				mockRepo.Products[id] = product
+			}
 
-	updates := RequestBodyProduct{
-		Name:         "Product AA",
-		Quantity:     5,
-		Code_value:   "123yy",
-		Is_published: boolPtr(true),
-		Expiration:   "01/01/2025",
-		Price:        10.0,
-	}
+			productService := service.NewServiceProducts(&mockRepo)
+			productHandler := NewHandlerProducts(&productService)
+			os.Setenv("TOKEN", "1234")
 
-	jsonBody, _ := json.Marshal(updates)
+			jsonBody, _ := json.Marshal(tt.updates)
+			req, _ := http.NewRequest("PUT", "/products/"+tt.productID, strings.NewReader(string(jsonBody)))
+			req.Header.Set("Token", "1234")
+			rr := httptest.NewRecorder()
 
-	req, _ := http.NewRequest("PUT", "/products/"+productID, strings.NewReader(string(jsonBody)))
-	req.Header.Set("Token", "1234")
-	rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(productHandler.UpdateOrCreate)
+			handler.ServeHTTP(rr, req)
 
-	handler := http.HandlerFunc(productHandler.UpdateOrCreate)
-	handler.ServeHTTP(rr, req)
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
+			if tt.expectedErr != nil {
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
 
-	var response ResponseBodyProduct
-	json.NewDecoder(rr.Body).Decode(&response)
+				if response.Error == false {
+					t.Errorf("expected error but got none")
+				}
 
-	if response.Data.Name != updates.Name {
-		t.Errorf("handler returned unexpected name: got %v want %v", response.Data.Name, updates.Name)
-	}
+				if response.Data != nil {
+					t.Errorf("expected no data but got %v", response.Data)
+				}
+			} else {
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
 
-	if response.Data.Quantity != updates.Quantity {
-		t.Errorf("handler returned unexpected quantity: got %v want %v", response.Data.Quantity, updates.Quantity)
-	}
-
-	if response.Data.Code_value != updates.Code_value {
-		t.Errorf("handler returned unexpected code value: got %v want %v", response.Data.Code_value, updates.Code_value)
-	}
-
-	if response.Data.Is_published != *updates.Is_published {
-		t.Errorf("handler returned unexpected publish status: got %v want %v", response.Data.Is_published, *updates.Is_published)
-	}
-
-	if response.Data.Expiration != updates.Expiration {
-		t.Errorf("handler returned unexpected expiration: got %v want %v", response.Data.Expiration, updates.Expiration)
-	}
-
-	if response.Data.Price != updates.Price {
-		t.Errorf("handler returned unexpected price: got %v want %v", response.Data.Price, updates.Price)
+				if response.Data.Name != tt.updates.Name {
+					t.Errorf("handler returned unexpected name: got %v want %v", response.Data.Name, tt.updates.Name)
+				}
+			}
+		})
 	}
 }
 
 func TestGetById(t *testing.T) {
-	mockRepo := repository.NewRepositoryProductsMock()
-	productService := service.NewServiceProducts(&mockRepo)
-	productHandler := NewHandlerProducts(&productService)
-
-	os.Setenv("TOKEN", "1234")
-
-	productID := "2"
-	newProduct := RequestBodyProduct{
-		Name:         "Product A",
-		Quantity:     5,
-		Code_value:   "123ydy",
-		Is_published: boolPtr(true),
-		Expiration:   "01/01/2025",
-		Price:        10.0,
+	tests := []struct {
+		name         string
+		productID    string
+		initialData  map[string]*storage.Product
+		expected     *storage.Product
+		expectedErr  error
+		expectedCode int
+	}{
+		{
+			name:      "Successful retrieval",
+			productID: "1",
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:         "1",
+					Name:       "Product A",
+					Quantity:   5,
+					Code_value: "123yy",
+					Expiration: "01/01/2025",
+					Price:      10.0,
+				},
+			},
+			expected: &storage.Product{
+				Id:         "1",
+				Name:       "Product A",
+				Quantity:   5,
+				Code_value: "123yy",
+				Expiration: "01/01/2025",
+				Price:      10.0,
+			},
+			expectedErr:  nil,
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:      "Product not found",
+			productID: "2",
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expected:     nil,
+			expectedErr:  errors.New("product not found"),
+			expectedCode: http.StatusNotFound,
+		},
 	}
 
-	mockRepo.Products[productID] = &storage.Product{
-		Id:           productID,
-		Name:         newProduct.Name,
-		Quantity:     newProduct.Quantity,
-		Code_value:   newProduct.Code_value,
-		Is_published: newProduct.Is_published,
-		Expiration:   newProduct.Expiration,
-		Price:        newProduct.Price,
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := repository.NewRepositoryProductsMock()
+			for id, product := range tt.initialData {
+				mockRepo.Products[id] = product
+			}
 
-	req, _ := http.NewRequest("GET", "/products/"+productID, nil)
-	req.Header.Set("Token", "1234")
-	rr := httptest.NewRecorder()
+			productService := service.NewServiceProducts(&mockRepo)
+			productHandler := NewHandlerProducts(&productService)
+			os.Setenv("TOKEN", "1234")
 
-	handler := http.HandlerFunc(productHandler.GetById)
-	handler.ServeHTTP(rr, req)
+			req, _ := http.NewRequest("GET", "/products/"+tt.productID, nil)
+			req.Header.Set("Token", "1234")
+			rr := httptest.NewRecorder()
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
+			handler := http.HandlerFunc(productHandler.GetById)
+			handler.ServeHTTP(rr, req)
 
-	var response storage.Product
-	json.NewDecoder(rr.Body).Decode(&response)
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
 
-	if response.Name != newProduct.Name {
-		t.Errorf("handler returned unexpected body: got %v want %v", response.Name, newProduct.Name)
+			if tt.expectedErr != nil {
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
+
+				if response.Error == false {
+					t.Errorf("expected error but got none")
+				}
+
+				if response.Data != nil {
+					t.Errorf("expected no data but got %v", response.Data)
+				}
+			} else {
+				var responseData storage.Product
+				json.NewDecoder(rr.Body).Decode(&responseData)
+
+				if responseData != *tt.expected {
+					t.Errorf("handler returned unexpected product: got %+v want %+v", responseData, *tt.expected)
+				}
+			}
+		})
 	}
 }
 
 func TestGetAll(t *testing.T) {
-	mockRepo := repository.NewRepositoryProductsMock()
-	productService := service.NewServiceProducts(&mockRepo)
-	productHandler := NewHandlerProducts(&productService)
-
-	os.Setenv("TOKEN", "1234")
-
-	mockRepo.Products["1"] = &storage.Product{
-		Id:           "1",
-		Name:         "Product A",
-		Quantity:     5,
-		Code_value:   "123yy",
-		Is_published: boolPtr(true),
-		Expiration:   "01/01/2025",
-		Price:        10.0,
+	tests := []struct {
+		name          string
+		initialData   map[string]*storage.Product
+		expectedCount int
+		expectedCode  int
+	}{
+		{
+			name: "Successful retrieval of all products",
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:         "1",
+					Name:       "Product A",
+					Quantity:   5,
+					Code_value: "123yy",
+					Expiration: "01/01/2025",
+					Price:      10.0,
+				},
+				"2": {
+					Id:         "2",
+					Name:       "Product B",
+					Quantity:   10,
+					Code_value: "456yy",
+					Expiration: "01/01/2026",
+					Price:      20.0,
+				},
+			},
+			expectedCount: 2,
+			expectedCode:  http.StatusOK,
+		},
+		{
+			name:          "No Products",
+			initialData:   map[string]*storage.Product{},
+			expectedCount: 0,
+			expectedCode:  http.StatusInternalServerError,
+		},
 	}
 
-	mockRepo.Products["2"] = &storage.Product{
-		Id:           "2",
-		Name:         "Product B",
-		Quantity:     10,
-		Code_value:   "456yy",
-		Is_published: boolPtr(false),
-		Expiration:   "01/01/2026",
-		Price:        20.0,
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := repository.NewRepositoryProductsMock()
+			for id, product := range tt.initialData {
+				mockRepo.Products[id] = product
+				t.Log(product)
+			}
 
-	req, _ := http.NewRequest("GET", "/products", nil)
-	req.Header.Set("Token", "1234")
-	rr := httptest.NewRecorder()
+			productService := service.NewServiceProducts(&mockRepo)
+			productHandler := NewHandlerProducts(&productService)
+			os.Setenv("TOKEN", "1234")
 
-	handler := http.HandlerFunc(productHandler.GetAll)
-	handler.ServeHTTP(rr, req)
+			req, _ := http.NewRequest("GET", "/products", nil)
+			req.Header.Set("Token", "1234")
+			rr := httptest.NewRecorder()
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
+			handler := http.HandlerFunc(productHandler.GetAll)
+			handler.ServeHTTP(rr, req)
 
-	var response []storage.Product
-	json.NewDecoder(rr.Body).Decode(&response)
+			t.Log(rr.Body)
 
-	if len(response) != 2 {
-		t.Errorf("expected 2 products, got %v", len(response))
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
+
+			if tt.expectedCount == 0 {
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
+
+				if response.Error == false {
+					t.Errorf("expected error but got none")
+				}
+
+				if response.Data != nil {
+					t.Errorf("expected no data but got %v", response.Data)
+				}
+			} else {
+				var response []storage.Product
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				if err != nil {
+					t.Errorf("error decoding response: %v", err)
+				}
+
+				if len(response) != tt.expectedCount {
+					t.Errorf("expected %v products, got %v", tt.expectedCount, len(response))
+				}
+			}
+		})
 	}
 }
 
 func TestPatchProduct(t *testing.T) {
-	mockRepo := repository.NewRepositoryProductsMock()
-	productService := service.NewServiceProducts(&mockRepo)
-	productHandler := NewHandlerProducts(&productService)
-
-	os.Setenv("TOKEN", "1234")
-
-	productID := "1"
-	mockRepo.Products[productID] = &storage.Product{
-		Id:           productID,
-		Name:         "Product A",
-		Quantity:     5,
-		Code_value:   "123yy",
-		Is_published: boolPtr(true),
-		Expiration:   "01/01/2025",
-		Price:        10.0,
+	tests := []struct {
+		name         string
+		productID    string
+		patchData    map[string]interface{}
+		initialData  map[string]*storage.Product
+		expectedErr  error
+		expectedCode int
+		expectedName string
+	}{
+		{
+			name:      "Successful patch",
+			productID: "1",
+			patchData: map[string]interface{}{
+				"name": "Product AA",
+			},
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  nil,
+			expectedCode: http.StatusOK,
+			expectedName: "Product AA",
+		},
+		{
+			name:      "Product not found",
+			productID: "2",
+			patchData: map[string]interface{}{
+				"name": "Product AA",
+			},
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  errors.New("product not found"),
+			expectedCode: http.StatusNotFound,
+			expectedName: "",
+		},
 	}
 
-	patchData := map[string]interface{}{
-		"name": "Product AA",
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := repository.NewRepositoryProductsMock()
+			for id, product := range tt.initialData {
+				mockRepo.Products[id] = product
+			}
 
-	jsonBody, _ := json.Marshal(patchData)
+			productService := service.NewServiceProducts(&mockRepo)
+			productHandler := NewHandlerProducts(&productService)
+			os.Setenv("TOKEN", "1234")
 
-	req, _ := http.NewRequest("PATCH", "/products/"+productID, strings.NewReader(string(jsonBody)))
-	req.Header.Set("Token", "1234")
-	rr := httptest.NewRecorder()
+			jsonBody, _ := json.Marshal(tt.patchData)
+			req, _ := http.NewRequest("PATCH", "/products/"+tt.productID, strings.NewReader(string(jsonBody)))
+			req.Header.Set("Token", "1234")
+			rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(productHandler.Update)
-	handler.ServeHTTP(rr, req)
+			handler := http.HandlerFunc(productHandler.Update)
+			handler.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
 
-	var response ResponseBodyProduct
-	json.NewDecoder(rr.Body).Decode(&response)
+			if tt.expectedErr != nil {
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
 
-	if response.Data.Name != patchData["name"] {
-		t.Errorf("handler returned unexpected name: got %v want %v", response.Data.Name, patchData["name"])
+				if response.Error == false {
+					t.Errorf("expected error but got none")
+				}
+
+				if response.Data != nil {
+					t.Errorf("expected no data but got %v", response.Data)
+				}
+			} else {
+				var response ResponseBodyProduct
+				json.NewDecoder(rr.Body).Decode(&response)
+
+				if response.Data.Name != tt.expectedName {
+					t.Errorf("handler returned unexpected name: got %v want %v", response.Data.Name, tt.expectedName)
+				}
+			}
+		})
 	}
 }
 
 func TestDeleteProduct(t *testing.T) {
-	mockRepo := repository.NewRepositoryProductsMock()
-	productService := service.NewServiceProducts(&mockRepo)
-	productHandler := NewHandlerProducts(&productService)
-
-	os.Setenv("TOKEN", "1234")
-
-	productID := "1"
-	mockRepo.Products[productID] = &storage.Product{
-		Id:           productID,
-		Name:         "Product A",
-		Quantity:     5,
-		Code_value:   "123yy",
-		Is_published: boolPtr(true),
-		Expiration:   "01/01/2025",
-		Price:        10.0,
+	tests := []struct {
+		name         string
+		productID    string
+		initialData  map[string]*storage.Product
+		expectedErr  error
+		expectedCode int
+	}{
+		{
+			name:      "Successful deletion",
+			productID: "1",
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  nil,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:      "Product not found",
+			productID: "2",
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:           "1",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  errors.New("product not found"),
+			expectedCode: http.StatusNotFound,
+		},
 	}
 
-	req, _ := http.NewRequest("DELETE", "/products/"+productID, nil)
-	req.Header.Set("Token", "1234")
-	rr := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := repository.NewRepositoryProductsMock()
+			for id, product := range tt.initialData {
+				mockRepo.Products[id] = product
+			}
 
-	handler := http.HandlerFunc(productHandler.Delete)
-	handler.ServeHTTP(rr, req)
+			productService := service.NewServiceProducts(&mockRepo)
+			productHandler := NewHandlerProducts(&productService)
+			os.Setenv("TOKEN", "1234")
 
-	if status := rr.Code; status != http.StatusNoContent {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
+			req, _ := http.NewRequest("DELETE", "/products/"+tt.productID, nil)
+			req.Header.Set("Token", "1234")
+			rr := httptest.NewRecorder()
 
-	_, exists := mockRepo.Products[productID]
-	if exists {
-		t.Errorf("Product %v should have been deleted", productID)
+			handler := http.HandlerFunc(productHandler.Delete)
+			handler.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
+
+			if tt.expectedCode == http.StatusNoContent {
+				_, exists := mockRepo.Products[tt.productID]
+				if exists {
+					t.Errorf("Product %v should have been deleted", tt.productID)
+				}
+			}
+		})
 	}
 }
