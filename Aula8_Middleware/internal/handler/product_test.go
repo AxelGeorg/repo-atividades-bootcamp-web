@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func boolPtr(b bool) *bool {
@@ -79,7 +81,6 @@ func TestCreateProduct(t *testing.T) {
 		},
 		{
 			name: "Negative price",
-
 			input: utils.RequestBodyProduct{
 				Name:         "Product D",
 				Quantity:     5,
@@ -101,7 +102,7 @@ func TestCreateProduct(t *testing.T) {
 			os.Setenv("TOKEN", "1234")
 
 			if tt.name == "Duplicated code_value" {
-				mockRepo.Products["1"] = &storage.Product{
+				mockRepo.Products["684963bb-7172-48ad-aecd-cdca3f0df012"] = &storage.Product{
 					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:         "Product A",
 					Quantity:     5,
@@ -120,29 +121,16 @@ func TestCreateProduct(t *testing.T) {
 			handler := http.HandlerFunc(productHandler.Create)
 			handler.ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
-			}
+			require.Equal(t, tt.expectedCode, rr.Code, "handler returned wrong status code")
+
+			var response utils.ResponseBodyProduct
+			json.NewDecoder(rr.Body).Decode(&response)
 
 			if tt.expectedErr != nil {
-
-				var response utils.ResponseBodyProduct
-				json.NewDecoder(rr.Body).Decode(&response)
-
-				if response.Error == false {
-					t.Errorf("expected error but got none")
-				}
-
-				if response.Data != nil {
-					t.Errorf("expected no data but got %v", response.Data)
-				}
+				require.True(t, response.Error, "expected error but got none")
+				require.Nil(t, response.Data, "expected no data but got some")
 			} else {
-				var response utils.ResponseBodyProduct
-				json.NewDecoder(rr.Body).Decode(&response)
-
-				if response.Data.Name != tt.input.Name {
-					t.Errorf("handler returned unexpected body: got %v want %v", response.Data.Name, tt.input.Name)
-				}
+				require.Equal(t, tt.input.Name, response.Data.Name, "handler returned unexpected body")
 			}
 		})
 	}
@@ -209,7 +197,7 @@ func TestUpdateProduct(t *testing.T) {
 				Price:        10.0,
 			},
 			initialData: map[string]*storage.Product{
-				"1": {
+				"684963bb-7172-48ad-aecd-cdca3f0df034": {
 					Id:           "684963bb-7172-48ad-aecd-cdca3f0df034",
 					Code_value:   "123yy",
 					Name:         "Product A",
@@ -234,7 +222,7 @@ func TestUpdateProduct(t *testing.T) {
 				Price:        10.0,
 			},
 			initialData: map[string]*storage.Product{
-				"1": {
+				"684963bb-7172-48ad-aecd-cdca3f0df013": {
 					Id:           "684963bb-7172-48ad-aecd-cdca3f0df013",
 					Code_value:   "123yy",
 					Name:         "Product A",
@@ -243,7 +231,7 @@ func TestUpdateProduct(t *testing.T) {
 					Expiration:   "01/01/2025",
 					Price:        10.0,
 				},
-				"2": {
+				"684963bb-7172-48ad-aecd-cdca3f0df033": {
 					Id:           "684963bb-7172-48ad-aecd-cdca3f0df033",
 					Code_value:   "123xx",
 					Name:         "Product B",
@@ -267,7 +255,7 @@ func TestUpdateProduct(t *testing.T) {
 				Price:        10.0,
 			},
 			initialData: map[string]*storage.Product{
-				"1": {
+				"684963bb-7172-48ad-aecd-cdca3f0df019": {
 					Id:           "684963bb-7172-48ad-aecd-cdca3f0df019",
 					Code_value:   "123yy",
 					Name:         "Product A",
@@ -301,28 +289,16 @@ func TestUpdateProduct(t *testing.T) {
 			handler := http.HandlerFunc(productHandler.UpdateOrCreate)
 			handler.ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
-			}
+			require.Equal(t, tt.expectedCode, rr.Code, "handler returned wrong status code")
+
+			var response utils.ResponseBodyProduct
+			json.NewDecoder(rr.Body).Decode(&response)
 
 			if tt.expectedErr != nil {
-				var response utils.ResponseBodyProduct
-				json.NewDecoder(rr.Body).Decode(&response)
-
-				if response.Error == false {
-					t.Errorf("expected error but got none")
-				}
-
-				if response.Data != nil {
-					t.Errorf("expected no data but got %v", response.Data)
-				}
+				require.True(t, response.Error, "expected error but got none")
+				require.Nil(t, response.Data, "expected no data but got some")
 			} else {
-				var response utils.ResponseBodyProduct
-				json.NewDecoder(rr.Body).Decode(&response)
-
-				if response.Data.Name != tt.updates.Name {
-					t.Errorf("handler returned unexpected name: got %v want %v", response.Data.Name, tt.updates.Name)
-				}
+				require.Equal(t, tt.updates.Name, response.Data.Name, "handler returned unexpected name")
 			}
 		})
 	}
@@ -417,28 +393,20 @@ func TestGetById(t *testing.T) {
 			handler := http.HandlerFunc(productHandler.GetById)
 			handler.ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
-			}
+			require.Equal(t, tt.expectedCode, rr.Code, "handler returned wrong status code")
 
 			if tt.expectedErr != nil {
 				var response utils.ResponseBodyProduct
 				json.NewDecoder(rr.Body).Decode(&response)
 
-				if response.Error == false {
-					t.Errorf("expected error but got none")
-				}
-
-				if response.Data != nil {
-					t.Errorf("expected no data but got %v", response.Data)
-				}
+				require.True(t, response.Error, "expected error but got none")
+				require.Nil(t, response.Data, "expected no data but got some")
 			} else {
 				var responseData storage.Product
-				json.NewDecoder(rr.Body).Decode(&responseData)
+				err := json.NewDecoder(rr.Body).Decode(&responseData)
+				require.NoError(t, err, "could not decode response body")
 
-				if responseData != *tt.expected {
-					t.Errorf("handler returned unexpected product: got %+v want %+v", responseData, *tt.expected)
-				}
+				require.Equal(t, *tt.expected, responseData, "handler returned unexpected product")
 			}
 		})
 	}
@@ -454,16 +422,16 @@ func TestGetAll(t *testing.T) {
 		{
 			name: "Successful retrieval of all products",
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:         "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df019": {
+					Id:         "684963bb-7172-48ad-aecd-cdca3f0df019",
 					Name:       "Product A",
 					Quantity:   5,
 					Code_value: "123yy",
 					Expiration: "01/01/2025",
 					Price:      10.0,
 				},
-				"2": {
-					Id:         "2",
+				"684963bb-1313-48ad-aecd-cdca3f0df019": {
+					Id:         "684963bb-1313-48ad-aecd-cdca3f0df019",
 					Name:       "Product B",
 					Quantity:   10,
 					Code_value: "456yy",
@@ -500,31 +468,21 @@ func TestGetAll(t *testing.T) {
 			handler := http.HandlerFunc(productHandler.GetAll)
 			handler.ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
-			}
+			require.Equal(t, tt.expectedCode, rr.Code, "handler returned wrong status code")
 
 			if tt.expectedCount == 0 {
 				var response utils.ResponseBodyProduct
-				json.NewDecoder(rr.Body).Decode(&response)
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				require.NoError(t, err, "could not decode response body")
 
-				if response.Error == false {
-					t.Errorf("expected error but got none")
-				}
-
-				if response.Data != nil {
-					t.Errorf("expected no data but got %v", response.Data)
-				}
+				require.True(t, response.Error, "expected error but got none")
+				require.Nil(t, response.Data, "expected no data but got some")
 			} else {
 				var response []storage.Product
 				err := json.NewDecoder(rr.Body).Decode(&response)
-				if err != nil {
-					t.Errorf("error decoding response: %v", err)
-				}
+				require.NoError(t, err, "error decoding response")
 
-				if len(response) != tt.expectedCount {
-					t.Errorf("expected %v products, got %v", tt.expectedCount, len(response))
-				}
+				require.Equal(t, tt.expectedCount, len(response), "expected different number of products")
 			}
 		})
 	}
@@ -603,28 +561,21 @@ func TestPatchProduct(t *testing.T) {
 			handler := http.HandlerFunc(productHandler.Update)
 			handler.ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
-			}
+			require.Equal(t, tt.expectedCode, rr.Code, "handler returned wrong status code")
 
 			if tt.expectedErr != nil {
 				var response utils.ResponseBodyProduct
-				json.NewDecoder(rr.Body).Decode(&response)
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				require.NoError(t, err, "could not decode response body")
 
-				if response.Error == false {
-					t.Errorf("expected error but got none")
-				}
-
-				if response.Data != nil {
-					t.Errorf("expected no data but got %v", response.Data)
-				}
+				require.True(t, response.Error, "expected error but got none")
+				require.Nil(t, response.Data, "expected no data but got some")
 			} else {
 				var response utils.ResponseBodyProduct
-				json.NewDecoder(rr.Body).Decode(&response)
+				err := json.NewDecoder(rr.Body).Decode(&response)
+				require.NoError(t, err, "could not decode response body")
 
-				if response.Data.Name != tt.expectedName {
-					t.Errorf("handler returned unexpected name: got %v want %v", response.Data.Name, tt.expectedName)
-				}
+				require.Equal(t, tt.expectedName, response.Data.Name, "handler returned unexpected name")
 			}
 		})
 	}
@@ -692,15 +643,11 @@ func TestDeleteProduct(t *testing.T) {
 			handler := http.HandlerFunc(productHandler.Delete)
 			handler.ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
-			}
+			require.Equal(t, tt.expectedCode, rr.Code, "handler returned wrong status code")
 
 			if tt.expectedCode == http.StatusNoContent {
 				_, exists := mockRepo.Products[tt.productID]
-				if exists {
-					t.Errorf("Product %v should have been deleted", tt.productID)
-				}
+				require.False(t, exists, "Product %v should have been deleted", tt.productID)
 			}
 		})
 	}
@@ -735,13 +682,11 @@ func TestMiddleware(t *testing.T) {
 			if tt.token != "" {
 				req.Header.Set("Token", tt.token)
 			}
-			rr := httptest.NewRecorder()
 
+			rr := httptest.NewRecorder()
 			middleware.ValidateToken(handler).ServeHTTP(rr, req)
 
-			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedCode)
-			}
+			require.Equal(t, tt.expectedCode, rr.Code, "handler returned wrong status code")
 		})
 	}
 }
