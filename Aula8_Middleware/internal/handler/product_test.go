@@ -115,8 +115,8 @@ func TestCreateProduct(t *testing.T) {
 			jsonBody, _ := json.Marshal(tt.input)
 			req, _ := http.NewRequest("POST", "/products", strings.NewReader(string(jsonBody)))
 			req.Header.Set("Token", "1234")
-			rr := httptest.NewRecorder()
 
+			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(productHandler.Create)
 			handler.ServeHTTP(rr, req)
 
@@ -296,8 +296,8 @@ func TestUpdateProduct(t *testing.T) {
 			jsonBody, _ := json.Marshal(tt.updates)
 			req, _ := http.NewRequest("PUT", "/products/"+tt.productID, strings.NewReader(string(jsonBody)))
 			req.Header.Set("Token", "1234")
-			rr := httptest.NewRecorder()
 
+			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(productHandler.UpdateOrCreate)
 			handler.ServeHTTP(rr, req)
 
@@ -412,8 +412,8 @@ func TestGetById(t *testing.T) {
 
 			req, _ := http.NewRequest("GET", "/products/"+tt.productID, nil)
 			req.Header.Set("Token", "1234")
-			rr := httptest.NewRecorder()
 
+			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(productHandler.GetById)
 			handler.ServeHTTP(rr, req)
 
@@ -495,8 +495,8 @@ func TestGetAll(t *testing.T) {
 
 			req, _ := http.NewRequest("GET", "/products", nil)
 			req.Header.Set("Token", "1234")
-			rr := httptest.NewRecorder()
 
+			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(productHandler.GetAll)
 			handler.ServeHTTP(rr, req)
 
@@ -598,8 +598,8 @@ func TestPatchProduct(t *testing.T) {
 			jsonBody, _ := json.Marshal(tt.patchData)
 			req, _ := http.NewRequest("PATCH", "/products/"+tt.productID, strings.NewReader(string(jsonBody)))
 			req.Header.Set("Token", "1234")
-			rr := httptest.NewRecorder()
 
+			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(productHandler.Update)
 			handler.ServeHTTP(rr, req)
 
@@ -687,8 +687,8 @@ func TestDeleteProduct(t *testing.T) {
 
 			req, _ := http.NewRequest("DELETE", "/products/"+tt.productID, nil)
 			req.Header.Set("Token", "1234")
-			rr := httptest.NewRecorder()
 
+			rr := httptest.NewRecorder()
 			handler := http.HandlerFunc(productHandler.Delete)
 			handler.ServeHTTP(rr, req)
 
@@ -710,7 +710,6 @@ func TestMiddleware(t *testing.T) {
 	mockRepo := repository.NewRepositoryProductsMock()
 	productService := service.NewServiceProducts(&mockRepo)
 	productHandler := NewHandlerProducts(&productService)
-
 	handler := http.HandlerFunc(productHandler.Create)
 
 	tests := []struct {
