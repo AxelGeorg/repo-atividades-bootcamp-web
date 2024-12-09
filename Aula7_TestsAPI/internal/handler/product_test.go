@@ -20,12 +20,14 @@ func boolPtr(b bool) *bool {
 func TestCreateProduct(t *testing.T) {
 	tests := []struct {
 		name         string
+		sendToken    bool
 		input        RequestBodyProduct
 		expectedErr  error
 		expectedCode int
 	}{
 		{
-			name: "Successful creation",
+			name:      "Successful creation",
+			sendToken: true,
 			input: RequestBodyProduct{
 				Name:         "Product A",
 				Quantity:     5,
@@ -38,7 +40,8 @@ func TestCreateProduct(t *testing.T) {
 			expectedCode: http.StatusCreated,
 		},
 		{
-			name: "Missing name",
+			name:      "Missing name",
+			sendToken: true,
 			input: RequestBodyProduct{
 				Quantity:     5,
 				Code_value:   "123yy",
@@ -50,7 +53,8 @@ func TestCreateProduct(t *testing.T) {
 			expectedCode: http.StatusBadRequest,
 		},
 		{
-			name: "Duplicated code_value",
+			name:      "Duplicated code_value",
+			sendToken: true,
 			input: RequestBodyProduct{
 				Name:         "Product B",
 				Quantity:     5,
@@ -63,7 +67,8 @@ func TestCreateProduct(t *testing.T) {
 			expectedCode: http.StatusBadRequest,
 		},
 		{
-			name: "Invalid expiration date",
+			name:      "Invalid expiration date",
+			sendToken: true,
 			input: RequestBodyProduct{
 				Name:         "Product C",
 				Quantity:     5,
@@ -76,7 +81,8 @@ func TestCreateProduct(t *testing.T) {
 			expectedCode: http.StatusBadRequest,
 		},
 		{
-			name: "Negative price",
+			name:      "Negative price",
+			sendToken: true,
 			input: RequestBodyProduct{
 				Name:         "Product D",
 				Quantity:     5,
@@ -87,6 +93,20 @@ func TestCreateProduct(t *testing.T) {
 			},
 			expectedErr:  errors.New("price must be non-negative"),
 			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name:      "Unauthorized",
+			sendToken: false,
+			input: RequestBodyProduct{
+				Name:         "Product D",
+				Quantity:     5,
+				Code_value:   "123xx",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        -5.0,
+			},
+			expectedErr:  errors.New("Unauthorized"),
+			expectedCode: http.StatusUnauthorized,
 		},
 	}
 
@@ -111,7 +131,11 @@ func TestCreateProduct(t *testing.T) {
 
 			jsonBody, _ := json.Marshal(tt.input)
 			req, _ := http.NewRequest("POST", "/products", strings.NewReader(string(jsonBody)))
-			req.Header.Set("Token", "1234")
+
+			if tt.sendToken {
+				req.Header.Set("Token", "1234")
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(productHandler.Create)
@@ -148,6 +172,7 @@ func TestCreateProduct(t *testing.T) {
 func TestUpdateProduct(t *testing.T) {
 	tests := []struct {
 		name         string
+		sendToken    bool
 		productID    string
 		updates      RequestBodyProduct
 		initialData  map[string]*storage.Product
@@ -156,6 +181,7 @@ func TestUpdateProduct(t *testing.T) {
 	}{
 		{
 			name:      "Successful update",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
@@ -181,6 +207,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df013",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
@@ -196,6 +223,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Invalid expiration date format",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
@@ -221,6 +249,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Duplicated code_value",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
@@ -255,6 +284,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Missing code_value",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
@@ -277,6 +307,32 @@ func TestUpdateProduct(t *testing.T) {
 			expectedErr:  errors.New("code_value is required"),
 			expectedCode: http.StatusBadRequest,
 		},
+		{
+			name:      "Unauthorized",
+			sendToken: false,
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
+			updates: RequestBodyProduct{
+				Name:         "Product AA",
+				Quantity:     5,
+				Code_value:   "123yy",
+				Is_published: boolPtr(true),
+				Expiration:   "01/01/2025",
+				Price:        10.0,
+			},
+			initialData: map[string]*storage.Product{
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
+					Code_value:   "123yy",
+					Name:         "Product A",
+					Quantity:     5,
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  errors.New("Unauthorized"),
+			expectedCode: http.StatusUnauthorized,
+		},
 	}
 
 	for _, tt := range tests {
@@ -292,7 +348,11 @@ func TestUpdateProduct(t *testing.T) {
 
 			jsonBody, _ := json.Marshal(tt.updates)
 			req, _ := http.NewRequest("PUT", "/products/"+tt.productID, strings.NewReader(string(jsonBody)))
-			req.Header.Set("Token", "1234")
+
+			if tt.sendToken {
+				req.Header.Set("Token", "1234")
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(productHandler.UpdateOrCreate)
@@ -328,6 +388,7 @@ func TestUpdateProduct(t *testing.T) {
 func TestGetById(t *testing.T) {
 	tests := []struct {
 		name         string
+		sendToken    bool
 		productID    string
 		initialData  map[string]*storage.Product
 		expected     *storage.Product
@@ -336,6 +397,7 @@ func TestGetById(t *testing.T) {
 	}{
 		{
 			name:      "Successful retrieval",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
 				"684963bb-7172-48ad-aecd-cdca3f0df012": {
@@ -360,6 +422,7 @@ func TestGetById(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
+			sendToken: true,
 			productID: "684963bb-1111-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
 				"684963bb-7172-48ad-aecd-cdca3f0df012": {
@@ -378,6 +441,7 @@ func TestGetById(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
+			sendToken: true,
 			productID: "111",
 			initialData: map[string]*storage.Product{
 				"684963bb-7172-48ad-aecd-cdca3f0df012": {
@@ -394,6 +458,25 @@ func TestGetById(t *testing.T) {
 			expectedErr:  errors.New("product not found"),
 			expectedCode: http.StatusBadRequest,
 		},
+		{
+			name:      "Unauthorized",
+			sendToken: false,
+			productID: "111",
+			initialData: map[string]*storage.Product{
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expected:     nil,
+			expectedErr:  errors.New("Unauthorized"),
+			expectedCode: http.StatusUnauthorized,
+		},
 	}
 
 	for _, tt := range tests {
@@ -408,7 +491,11 @@ func TestGetById(t *testing.T) {
 			os.Setenv("TOKEN", "1234")
 
 			req, _ := http.NewRequest("GET", "/products/"+tt.productID, nil)
-			req.Header.Set("Token", "1234")
+
+			if tt.sendToken {
+				req.Header.Set("Token", "1234")
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(productHandler.GetById)
@@ -444,12 +531,14 @@ func TestGetById(t *testing.T) {
 func TestGetAll(t *testing.T) {
 	tests := []struct {
 		name          string
+		sendToken     bool
 		initialData   map[string]*storage.Product
 		expectedCount int
 		expectedCode  int
 	}{
 		{
-			name: "Successful retrieval of all products",
+			name:      "Successful retrieval of all products",
+			sendToken: true,
 			initialData: map[string]*storage.Product{
 				"1": {
 					Id:         "1",
@@ -473,9 +562,34 @@ func TestGetAll(t *testing.T) {
 		},
 		{
 			name:          "No Products",
+			sendToken:     true,
 			initialData:   map[string]*storage.Product{},
 			expectedCount: 0,
 			expectedCode:  http.StatusInternalServerError,
+		},
+		{
+			name:      "Unauthorized",
+			sendToken: false,
+			initialData: map[string]*storage.Product{
+				"1": {
+					Id:         "1",
+					Name:       "Product A",
+					Quantity:   5,
+					Code_value: "123yy",
+					Expiration: "01/01/2025",
+					Price:      10.0,
+				},
+				"2": {
+					Id:         "2",
+					Name:       "Product B",
+					Quantity:   10,
+					Code_value: "456yy",
+					Expiration: "01/01/2026",
+					Price:      20.0,
+				},
+			},
+			expectedCount: 0,
+			expectedCode:  http.StatusUnauthorized,
 		},
 	}
 
@@ -491,7 +605,11 @@ func TestGetAll(t *testing.T) {
 			os.Setenv("TOKEN", "1234")
 
 			req, _ := http.NewRequest("GET", "/products", nil)
-			req.Header.Set("Token", "1234")
+
+			if tt.sendToken {
+				req.Header.Set("Token", "1234")
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(productHandler.GetAll)
@@ -530,6 +648,7 @@ func TestGetAll(t *testing.T) {
 func TestPatchProduct(t *testing.T) {
 	tests := []struct {
 		name         string
+		sendToken    bool
 		productID    string
 		patchData    map[string]interface{}
 		initialData  map[string]*storage.Product
@@ -539,6 +658,7 @@ func TestPatchProduct(t *testing.T) {
 	}{
 		{
 			name:      "Successful patch",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			patchData: map[string]interface{}{
 				"name": "Product AA",
@@ -560,6 +680,7 @@ func TestPatchProduct(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
+			sendToken: true,
 			productID: "684963bb-1212-48ad-aecd-cdca3f0df012",
 			patchData: map[string]interface{}{
 				"name": "Product AA",
@@ -579,6 +700,28 @@ func TestPatchProduct(t *testing.T) {
 			expectedCode: http.StatusNotFound,
 			expectedName: "",
 		},
+		{
+			name:      "Unauthorized",
+			sendToken: false,
+			productID: "684963bb-1212-48ad-aecd-cdca3f0df012",
+			patchData: map[string]interface{}{
+				"name": "Product AA",
+			},
+			initialData: map[string]*storage.Product{
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  errors.New("Unauthorized"),
+			expectedCode: http.StatusUnauthorized,
+			expectedName: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -594,7 +737,11 @@ func TestPatchProduct(t *testing.T) {
 
 			jsonBody, _ := json.Marshal(tt.patchData)
 			req, _ := http.NewRequest("PATCH", "/products/"+tt.productID, strings.NewReader(string(jsonBody)))
-			req.Header.Set("Token", "1234")
+
+			if tt.sendToken {
+				req.Header.Set("Token", "1234")
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(productHandler.Update)
@@ -630,6 +777,7 @@ func TestPatchProduct(t *testing.T) {
 func TestDeleteProduct(t *testing.T) {
 	tests := []struct {
 		name         string
+		sendToken    bool
 		productID    string
 		initialData  map[string]*storage.Product
 		expectedErr  error
@@ -637,6 +785,7 @@ func TestDeleteProduct(t *testing.T) {
 	}{
 		{
 			name:      "Successful deletion",
+			sendToken: true,
 			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
 				"684963bb-7172-48ad-aecd-cdca3f0df012": {
@@ -654,6 +803,7 @@ func TestDeleteProduct(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
+			sendToken: true,
 			productID: "684963bb-2323-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
 				"684963bb-7172-48ad-aecd-cdca3f0df012": {
@@ -669,6 +819,24 @@ func TestDeleteProduct(t *testing.T) {
 			expectedErr:  errors.New("product not found"),
 			expectedCode: http.StatusNotFound,
 		},
+		{
+			name:      "Unauthorized",
+			sendToken: false,
+			productID: "684963bb-2323-48ad-aecd-cdca3f0df012",
+			initialData: map[string]*storage.Product{
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expectedErr:  errors.New("Unauthorized"),
+			expectedCode: http.StatusUnauthorized,
+		},
 	}
 
 	for _, tt := range tests {
@@ -683,7 +851,11 @@ func TestDeleteProduct(t *testing.T) {
 			os.Setenv("TOKEN", "1234")
 
 			req, _ := http.NewRequest("DELETE", "/products/"+tt.productID, nil)
-			req.Header.Set("Token", "1234")
+
+			if tt.sendToken {
+				req.Header.Set("Token", "1234")
+			}
+
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(productHandler.Delete)
