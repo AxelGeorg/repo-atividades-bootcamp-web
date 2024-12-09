@@ -2,6 +2,7 @@ package service
 
 import (
 	"aula4/internal/repository/storage"
+	"aula4/internal/utils"
 	"errors"
 	"log"
 	"strings"
@@ -14,6 +15,11 @@ func GetProductQuantity(service Service, ids []string) (int, []*storage.Product,
 	var products []*storage.Product
 	for _, id := range ids {
 		idStr := strings.TrimSpace(id)
+		err := utils.ValidateUUID(idStr)
+		if err != nil {
+			return 0.0, nil, err
+		}
+
 		product, err := service.GetById(idStr)
 		if err != nil {
 			log.Printf("Error retrieving product with ID:" + idStr + " - Error: " + err.Error())

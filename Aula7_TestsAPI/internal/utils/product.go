@@ -3,7 +3,10 @@ package utils
 import (
 	"aula4/internal/repository/storage"
 	"errors"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -23,6 +26,13 @@ func CheckUniqueCodeValue(products []*storage.Product, prod storage.Product) err
 		}
 	}
 
+	return nil
+}
+
+func ValidateUUID(id string) error {
+	if _, err := uuid.Parse(id); err != nil {
+		return fmt.Errorf("invalid UUID format: %s", id)
+	}
 	return nil
 }
 

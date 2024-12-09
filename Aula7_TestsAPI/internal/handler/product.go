@@ -97,6 +97,11 @@ func (c *ProductController) UpdateOrCreate(w http.ResponseWriter, r *http.Reques
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
+	err := utils.ValidateUUID(idStr)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+	}
+
 	product := storage.Product{
 		Id:           idStr,
 		Name:         reqBody.Name,
@@ -133,7 +138,12 @@ func (c *ProductController) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
-	_, err := c.Service.GetById(idStr)
+	err := utils.ValidateUUID(idStr)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+	}
+
+	_, err = c.Service.GetById(idStr)
 	if err != nil {
 		ResponseWithError(w, err, http.StatusNotFound)
 		return
@@ -165,12 +175,17 @@ func (c *ProductController) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
+	err := utils.ValidateUUID(idStr)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+	}
+
 	if _, err := c.Service.GetById(idStr); err != nil {
 		ResponseWithError(w, err, http.StatusNotFound)
 		return
 	}
 
-	err := c.Service.Delete(idStr)
+	err = c.Service.Delete(idStr)
 	if err != nil {
 		ResponseWithError(w, err, http.StatusInternalServerError)
 		return
@@ -201,7 +216,13 @@ func (c *ProductController) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idStr := r.URL.Path[len("/products/"):]
-	product, err := c.Service.GetById(idStr)
+	err := utils.ValidateUUID(idStr)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+	}
+
+	var product *storage.Product
+	product, err = c.Service.GetById(idStr)
 	if err != nil {
 		if err.Error() == "product not found" {
 			ResponseWithError(w, err, http.StatusNotFound)

@@ -99,7 +99,7 @@ func TestCreateProduct(t *testing.T) {
 
 			if tt.name == "Duplicated code_value" {
 				mockRepo.Products["1"] = &storage.Product{
-					Id:           "1",
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:         "Product A",
 					Quantity:     5,
 					Code_value:   "123yy",
@@ -156,7 +156,7 @@ func TestUpdateProduct(t *testing.T) {
 	}{
 		{
 			name:      "Successful update",
-			productID: "1",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
@@ -166,8 +166,8 @@ func TestUpdateProduct(t *testing.T) {
 				Price:        10.0,
 			},
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:           "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Code_value:   "123yy",
 					Name:         "Product A",
 					Quantity:     5,
@@ -181,7 +181,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
-			productID: "2",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df013",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
@@ -196,7 +196,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Invalid expiration date format",
-			productID: "1",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
@@ -207,7 +207,7 @@ func TestUpdateProduct(t *testing.T) {
 			},
 			initialData: map[string]*storage.Product{
 				"1": {
-					Id:           "1",
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df034",
 					Code_value:   "123yy",
 					Name:         "Product A",
 					Quantity:     5,
@@ -221,7 +221,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Duplicated code_value",
-			productID: "1",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
@@ -232,7 +232,7 @@ func TestUpdateProduct(t *testing.T) {
 			},
 			initialData: map[string]*storage.Product{
 				"1": {
-					Id:           "1",
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df013",
 					Code_value:   "123yy",
 					Name:         "Product A",
 					Quantity:     5,
@@ -241,7 +241,7 @@ func TestUpdateProduct(t *testing.T) {
 					Price:        10.0,
 				},
 				"2": {
-					Id:           "2",
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df033",
 					Code_value:   "123xx",
 					Name:         "Product B",
 					Quantity:     3,
@@ -255,7 +255,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 		{
 			name:      "Missing code_value",
-			productID: "1",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			updates: RequestBodyProduct{
 				Name:         "Product AA",
 				Quantity:     5,
@@ -265,7 +265,7 @@ func TestUpdateProduct(t *testing.T) {
 			},
 			initialData: map[string]*storage.Product{
 				"1": {
-					Id:           "1",
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df019",
 					Code_value:   "123yy",
 					Name:         "Product A",
 					Quantity:     5,
@@ -336,10 +336,10 @@ func TestGetById(t *testing.T) {
 	}{
 		{
 			name:      "Successful retrieval",
-			productID: "1",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:         "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:         "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:       "Product A",
 					Quantity:   5,
 					Code_value: "123yy",
@@ -348,7 +348,7 @@ func TestGetById(t *testing.T) {
 				},
 			},
 			expected: &storage.Product{
-				Id:         "1",
+				Id:         "684963bb-7172-48ad-aecd-cdca3f0df012",
 				Name:       "Product A",
 				Quantity:   5,
 				Code_value: "123yy",
@@ -360,10 +360,10 @@ func TestGetById(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
-			productID: "2",
+			productID: "684963bb-1111-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:           "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:         "Product A",
 					Quantity:     5,
 					Code_value:   "123yy",
@@ -375,6 +375,24 @@ func TestGetById(t *testing.T) {
 			expected:     nil,
 			expectedErr:  errors.New("product not found"),
 			expectedCode: http.StatusNotFound,
+		},
+		{
+			name:      "Product not found",
+			productID: "111",
+			initialData: map[string]*storage.Product{
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
+					Name:         "Product A",
+					Quantity:     5,
+					Code_value:   "123yy",
+					Is_published: boolPtr(true),
+					Expiration:   "01/01/2025",
+					Price:        10.0,
+				},
+			},
+			expected:     nil,
+			expectedErr:  errors.New("product not found"),
+			expectedCode: http.StatusBadRequest,
 		},
 	}
 
@@ -521,13 +539,13 @@ func TestPatchProduct(t *testing.T) {
 	}{
 		{
 			name:      "Successful patch",
-			productID: "1",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			patchData: map[string]interface{}{
 				"name": "Product AA",
 			},
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:           "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:         "Product A",
 					Quantity:     5,
 					Code_value:   "123yy",
@@ -542,13 +560,13 @@ func TestPatchProduct(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
-			productID: "2",
+			productID: "684963bb-1212-48ad-aecd-cdca3f0df012",
 			patchData: map[string]interface{}{
 				"name": "Product AA",
 			},
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:           "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:         "Product A",
 					Quantity:     5,
 					Code_value:   "123yy",
@@ -619,10 +637,10 @@ func TestDeleteProduct(t *testing.T) {
 	}{
 		{
 			name:      "Successful deletion",
-			productID: "1",
+			productID: "684963bb-7172-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:           "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:         "Product A",
 					Quantity:     5,
 					Code_value:   "123yy",
@@ -636,10 +654,10 @@ func TestDeleteProduct(t *testing.T) {
 		},
 		{
 			name:      "Product not found",
-			productID: "2",
+			productID: "684963bb-2323-48ad-aecd-cdca3f0df012",
 			initialData: map[string]*storage.Product{
-				"1": {
-					Id:           "1",
+				"684963bb-7172-48ad-aecd-cdca3f0df012": {
+					Id:           "684963bb-7172-48ad-aecd-cdca3f0df012",
 					Name:         "Product A",
 					Quantity:     5,
 					Code_value:   "123yy",
