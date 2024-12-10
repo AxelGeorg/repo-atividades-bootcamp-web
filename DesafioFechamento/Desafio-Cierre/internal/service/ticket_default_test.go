@@ -10,40 +10,72 @@ import (
 )
 
 func TestServiceTicketDefault_GetTicketsAmountByDestinationCountry(t *testing.T) {
-	t.Run("success to get total tickets", func(t *testing.T) {
-		country := "USA"
+	tests := []struct {
+		name          string
+		country       string
+		expectedTotal int
+	}{
+		{
+			name:          "USA with 2 tickets",
+			country:       "USA",
+			expectedTotal: 2,
+		},
+		{
+			name:          "Canada with 1 ticket",
+			country:       "Canada",
+			expectedTotal: 1,
+		},
+		{
+			name:          "Mexico with 0 tickets",
+			country:       "Mexico",
+			expectedTotal: 0,
+		},
+	}
 
-		rp := repository.NewRepositoryTicketMock()
-
-		rp.FuncGetTicketsByDestinationCountry = func(country string) (map[int]internal.TicketAttributes, error) {
-			if country == "USA" {
-				return map[int]internal.TicketAttributes{
-					1: {
-						Name:    "John",
-						Email:   "johndoe@gmail.com",
-						Country: "USA",
-						Hour:    "10:00",
-						Price:   100,
-					},
-					2: {
-						Name:    "Jane",
-						Email:   "janedoe@gmail.com",
-						Country: "USA",
-						Hour:    "11:00",
-						Price:   150,
-					},
-				}, nil
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rp := repository.NewRepositoryTicketMock()
+			rp.FuncGetTicketsByDestinationCountry = func(country string) (map[int]internal.TicketAttributes, error) {
+				switch country {
+				case "USA":
+					return map[int]internal.TicketAttributes{
+						1: {
+							Name:    "John",
+							Email:   "johndoe@gmail.com",
+							Country: "USA",
+							Hour:    "10:00",
+							Price:   100,
+						},
+						2: {
+							Name:    "Jane",
+							Email:   "janedoe@gmail.com",
+							Country: "USA",
+							Hour:    "11:00",
+							Price:   150,
+						},
+					}, nil
+				case "Canada":
+					return map[int]internal.TicketAttributes{
+						1: {
+							Name:    "Alex",
+							Email:   "alex@email.com",
+							Country: "Canada",
+							Hour:    "09:00",
+							Price:   120,
+						},
+					}, nil
+				default:
+					return nil, nil
+				}
 			}
-			return nil, nil
-		}
 
-		sv := service.NewServiceTicketDefault(&rp)
-		total, err := sv.GetTicketsAmountByDestinationCountry(country)
+			sv := service.NewServiceTicketDefault(&rp)
+			total, err := sv.GetTicketsAmountByDestinationCountry(tt.country)
 
-		expectedTotal := 2
-		require.NoError(t, err)
-		require.Equal(t, expectedTotal, total)
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedTotal, total)
 
-		require.Equal(t, 1, rp.Spy.GetTicketsByDestinationCountry)
-	})
+			require.Equal(t, 1, rp.Spy.GetTicketsByDestinationCountry)
+		})
+	}
 }
