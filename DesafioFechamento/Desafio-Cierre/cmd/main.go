@@ -1,6 +1,7 @@
 package main
 
 import (
+	"app/internal/handler"
 	"app/internal/repository"
 	"app/internal/repository/loader"
 	"app/internal/service"
@@ -98,14 +99,11 @@ func (a *ApplicationDefault) SetUp() (err error) {
 
 	rp := repository.NewRepositoryTicketMap(tickets)
 	sv := service.NewServiceTicketDefault(&rp)
-	// handler ...
+	hd := handler.NewHandlerTickets(&sv)
 
 	// routes
-	(*a).rt.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("OK"))
-	})
+	(*a).rt.Get("/ticket/getByCountry/", hd.GetByCountry)
+	(*a).rt.Get("/ticket/getAverage/", hd.GetAverage)
 
 	return
 }
