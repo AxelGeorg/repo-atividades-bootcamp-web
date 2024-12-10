@@ -11,12 +11,10 @@ import (
 
 func TestServiceTicketDefault_GetTicketsAmountByDestinationCountry(t *testing.T) {
 	t.Run("success to get total tickets", func(t *testing.T) {
-		country := "USA" // Define o país que estamos testando
+		country := "USA"
 
-		// Criando o mock para o repositório de bilhetes
-		rp := repository.NewRepositoryTicketMock() // Certifique-se de usar o mock correto
+		rp := repository.NewRepositoryTicketMock()
 
-		// Configurando o FuncGetTicketsByDestinationCountry para retornar bilhetes para "USA"
 		rp.FuncGetTicketsByDestinationCountry = func(country string) (map[int]internal.TicketAttributes, error) {
 			if country == "USA" {
 				return map[int]internal.TicketAttributes{
@@ -39,18 +37,13 @@ func TestServiceTicketDefault_GetTicketsAmountByDestinationCountry(t *testing.T)
 			return nil, nil
 		}
 
-		// Criando o serviço utilizando o repositório mock
 		sv := service.NewServiceTicketDefault(&rp)
-
-		// Chamando a função que estamos testando
 		total, err := sv.GetTicketsAmountByDestinationCountry(country)
 
-		// O valor esperado é 2, já que temos dois bilhetes para o país "USA"
 		expectedTotal := 2
 		require.NoError(t, err)
 		require.Equal(t, expectedTotal, total)
 
-		// Verifica se o método foi chamado
 		require.Equal(t, 1, rp.Spy.GetTicketsByDestinationCountry)
 	})
 }

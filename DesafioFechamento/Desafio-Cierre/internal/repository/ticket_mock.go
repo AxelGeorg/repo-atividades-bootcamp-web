@@ -2,16 +2,11 @@ package repository
 
 import (
 	"app/internal"
-	"context"
 )
 
-func NewRepositoryTicketMock() *RepositoryTicketMap {
-	return &RepositoryTicketMap{}
-}
-
 type RepositoryTicketMock struct {
-	FuncGet                            func() (t map[int]internal.TicketAttributes, err error)
-	FuncGetTicketsByDestinationCountry func(country string) (t map[int]internal.TicketAttributes, err error)
+	FuncGet                            func() (map[int]internal.TicketAttributes, error)
+	FuncGetTicketsByDestinationCountry func(country string) (map[int]internal.TicketAttributes, error)
 
 	Spy struct {
 		Get                            int
@@ -19,14 +14,16 @@ type RepositoryTicketMock struct {
 	}
 }
 
-func (r *RepositoryTicketMock) Get(ctx context.Context) (t map[int]internal.TicketAttributes, err error) {
-	r.Spy.Get++
-	t, err = r.FuncGet()
-	return
+func NewRepositoryTicketMock() RepositoryTicketMock {
+	return RepositoryTicketMock{}
 }
 
-func (r *RepositoryTicketMock) GetTicketsByDestinationCountry(ctx context.Context, country string) (t map[int]internal.TicketAttributes, err error) {
+func (r *RepositoryTicketMock) GetTotalTickets() (map[int]internal.TicketAttributes, error) {
+	r.Spy.Get++
+	return r.FuncGet()
+}
+
+func (r *RepositoryTicketMock) GetTicketsByDestinationCountry(country string) (map[int]internal.TicketAttributes, error) {
 	r.Spy.GetTicketsByDestinationCountry++
-	t, err = r.FuncGetTicketsByDestinationCountry(country)
-	return
+	return r.FuncGetTicketsByDestinationCountry(country)
 }
