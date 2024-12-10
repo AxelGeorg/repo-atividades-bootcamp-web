@@ -7,36 +7,25 @@ import (
 	"app/internal/service"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
-	// env
-	// ...
-
-	// application
-	// - config
-	/*cfg := &ConfigAppDefault{
+	cfg := &ConfigAppDefault{
 		ServerAddr: os.Getenv("SERVER_ADDR"),
 		DbFile:     os.Getenv("DB_FILE"),
-	}*/
-
-	cfg := &ConfigAppDefault{
-		//ServerAddr: os.Getenv("SERVER_ADDR"),
-		DbFile: "../../docs/db/tickets.csv",
 	}
 
 	app := NewApplicationDefault(cfg)
 
-	// - setup
 	err := app.SetUp()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// - run
 	err = app.Run()
 	if err != nil {
 		fmt.Println(err)
@@ -44,21 +33,16 @@ func main() {
 	}
 }
 
-// ConfigAppDefault represents the configuration of the default application
 type ConfigAppDefault struct {
-	// serverAddr represents the address of the server
 	ServerAddr string
-	// dbFile represents the path to the database file
-	DbFile string
+	DbFile     string
 }
 
-// NewApplicationDefault creates a new default application
 func NewApplicationDefault(cfg *ConfigAppDefault) *ApplicationDefault {
-	// default values
 	defaultRouter := chi.NewRouter()
 	defaultConfig := &ConfigAppDefault{
 		ServerAddr: ":8080",
-		DbFile:     "",
+		DbFile:     "../docs/db/tickets.csv",
 	}
 	if cfg != nil {
 		if cfg.ServerAddr != "" {
@@ -76,22 +60,16 @@ func NewApplicationDefault(cfg *ConfigAppDefault) *ApplicationDefault {
 	}
 }
 
-// ApplicationDefault represents the default application
 type ApplicationDefault struct {
-	// router represents the router of the application
-	rt *chi.Mux
-	// serverAddr represents the address of the server
+	rt         *chi.Mux
 	serverAddr string
-	// dbFile represents the path to the database file
-	dbFile string
+	dbFile     string
 }
 
-// SetUp sets up the application
 func (a *ApplicationDefault) SetUp() (err error) {
-
-	// dependencies
 	db := loader.NewLoaderTicketCSV(a.dbFile)
 	tickets, err := db.Load()
+
 	if err != nil {
 		fmt.Printf("Error loading tickets: %v\n", err)
 		return
@@ -101,14 +79,12 @@ func (a *ApplicationDefault) SetUp() (err error) {
 	sv := service.NewServiceTicketDefault(&rp)
 	hd := handler.NewHandlerTickets(&sv)
 
-	// routes
-	(*a).rt.Get("/ticket/getByCountry/", hd.GetByCountry)
-	(*a).rt.Get("/ticket/getAverage/", hd.GetAverage)
+	(*a).rt.Get("/ticket/getByCountry/{dest}", hd.GetByCountry)
+	(*a).rt.Get("/ticket/getAverage/{dest}", hd.GetAverage)
 
 	return
 }
 
-// Run runs the application
 func (a *ApplicationDefault) Run() (err error) {
 	err = http.ListenAndServe(a.serverAddr, a.rt)
 	return

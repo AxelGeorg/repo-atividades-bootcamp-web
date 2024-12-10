@@ -2,10 +2,8 @@ package repository
 
 import (
 	"app/internal"
-	"context"
 )
 
-// NewRepositoryTicketMap creates a new repository for tickets in a map
 func NewRepositoryTicketMap(storage map[int]*internal.TicketAttributes) RepositoryTicketMap {
 	return RepositoryTicketMap{
 		db:     storage,
@@ -13,20 +11,12 @@ func NewRepositoryTicketMap(storage map[int]*internal.TicketAttributes) Reposito
 	}
 }
 
-// RepositoryTicketMap implements the repository interface for tickets in a map
 type RepositoryTicketMap struct {
-	// db represents the database in a map
-	// - key: id of the ticket
-	// - value: ticket
-	db map[int]*internal.TicketAttributes
-
-	// lastId represents the last id of the ticket
+	db     map[int]*internal.TicketAttributes
 	lastId int
 }
 
-// GetAll returns all the tickets
-func (r *RepositoryTicketMap) GetAll() (map[int]internal.TicketAttributes, error) {
-	// create a copy of the map
+func (r *RepositoryTicketMap) GetTotalTickets() (map[int]internal.TicketAttributes, error) {
 	t := make(map[int]internal.TicketAttributes, len(r.db))
 	for k, v := range r.db {
 		t[k] = *v
@@ -35,9 +25,7 @@ func (r *RepositoryTicketMap) GetAll() (map[int]internal.TicketAttributes, error
 	return t, nil
 }
 
-// GetTicketsByDestinationCountry returns the tickets filtered by destination country
-func (r *RepositoryTicketMap) GetTicketsByDestinationCountry(ctx context.Context, country string) (map[int]internal.TicketAttributes, error) {
-	// create a copy of the map
+func (r *RepositoryTicketMap) GetTicketsByDestinationCountry(country string) (map[int]internal.TicketAttributes, error) {
 	t := make(map[int]internal.TicketAttributes)
 	for k, v := range r.db {
 		if v.Country == country {

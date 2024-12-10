@@ -2,26 +2,47 @@ package service
 
 import "app/internal/repository"
 
-// ServiceTicketDefault represents the default service of the tickets
 type ServiceTicketDefault struct {
-	// rp represents the repository of the tickets
 	Repository repository.RepositoryTicket
 }
 
-// NewServiceTicketDefault creates a new default service of the tickets
 func NewServiceTicketDefault(rp repository.RepositoryTicket) ServiceTicketDefault {
 	return ServiceTicketDefault{
 		Repository: rp,
 	}
 }
 
-// GetTotalTickets returns the total number of tickets
-func (s *ServiceTicketDefault) GetTotalTickets() (total int, err error) {
-	tickets, err := s.Repository.GetAll() // Obtém todos os tickets do repositório
+func (s *ServiceTicketDefault) GetTotalTickets() (int, error) {
+	tickets, err := s.Repository.GetTotalTickets()
 	if err != nil {
-		return 0, err // Retorna erro se a recuperação falhar
+		return 0, err
 	}
 
-	total = len(tickets) // Conta o número de tickets
-	return total, nil    // Retorna o total e nil para o erro
+	total := len(tickets)
+	return total, nil
+}
+
+func (s *ServiceTicketDefault) GetTicketsAmountByDestinationCountry(destination string) (int, error) {
+	tickets, err := s.Repository.GetTicketsByDestinationCountry(destination)
+	if err != nil {
+		return 0, err
+	}
+
+	total := len(tickets)
+	return total, nil
+}
+
+func (s *ServiceTicketDefault) GetPercentageTicketsByDestinationCountry(destination string) (float64, error) {
+	ticketsByDest, err := s.Repository.GetTicketsByDestinationCountry(destination)
+	if err != nil {
+		return 0, err
+	}
+
+	ticketsTotal, err := s.GetTotalTickets()
+	if err != nil {
+		return 0, err
+	}
+
+	percentage := (float64(len(ticketsByDest)) / float64(ticketsTotal)) * 100
+	return percentage, nil
 }
