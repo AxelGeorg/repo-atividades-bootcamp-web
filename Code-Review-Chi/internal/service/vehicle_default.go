@@ -80,6 +80,25 @@ func (s *VehicleDefault) Create(vehicle internal.VehicleAttributes) (v internal.
 	return
 }
 
+func (s *VehicleDefault) GetAverageSpeed(brand string) (float64, error) {
+
+	filter := internal.VehicleAttributesFilter{
+		Brand: brand,
+	}
+
+	vehicles, err := s.GetVehiclesWithFilter(filter)
+	if err != nil {
+		return 0.0, nil
+	}
+
+	var sumMaxSpeed float64
+	for _, vehicle := range *vehicles {
+		sumMaxSpeed += vehicle.MaxSpeed
+	}
+
+	return (sumMaxSpeed / float64(len(*vehicles))), nil
+}
+
 func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributesFilter) (*map[int]internal.Vehicle, error) {
 	list, err := s.rp.FindAll()
 	if err != nil {

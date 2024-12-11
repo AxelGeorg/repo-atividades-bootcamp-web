@@ -5,6 +5,7 @@ import (
 	errorss "app/internal/errors"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -269,6 +270,20 @@ func (h *VehicleDefault) GetBrandAndYearsPeriod(w http.ResponseWriter, r *http.R
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(data)
+}
+
+func (h *VehicleDefault) GetAverageSpeed(w http.ResponseWriter, r *http.Request) {
+	brand := r.URL.Path[len("/vehicles/average_speed/brand/"):]
+	fmt.Println(brand)
+	avarage, err := h.sv.GetAverageSpeed(brand)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+	}
+	fmt.Println(avarage)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fmt.Sprint("Avarage Speed: ", avarage))
 }
 
 func (h *VehicleDefault) Post(w http.ResponseWriter, r *http.Request) {
