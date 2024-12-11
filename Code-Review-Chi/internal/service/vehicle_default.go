@@ -99,6 +99,24 @@ func (s *VehicleDefault) GetAverageSpeed(brand string) (float64, error) {
 	return (sumMaxSpeed / float64(len(*vehicles))), nil
 }
 
+func (s *VehicleDefault) GetAverageCapacity(brand string) (float64, error) {
+	filter := internal.VehicleAttributesFilter{
+		Brand: brand,
+	}
+
+	vehicles, err := s.GetVehiclesWithFilter(filter)
+	if err != nil {
+		return 0.0, nil
+	}
+
+	var sumCapacity float64
+	for _, vehicle := range *vehicles {
+		sumCapacity += float64(vehicle.Capacity)
+	}
+
+	return (sumCapacity / float64(len(*vehicles))), nil
+}
+
 func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributesFilter) (*map[int]internal.Vehicle, error) {
 	list, err := s.rp.FindAll()
 	if err != nil {
@@ -166,26 +184,20 @@ func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributes
 			}
 		}
 
-		if filter.Weight > 0 {
-			if filter.Weight != vehicle.Weight {
+		if filter.WeightMin > 0 && filter.WeightMax > 0 {
+			if vehicle.Weight > filter.WeightMax || vehicle.Weight < filter.WeightMin {
 				continue
 			}
 		}
 
-		if filter.Dimensions.Length > 0 {
-			if filter.Dimensions.Length != vehicle.Dimensions.Length {
+		if filter.DimensionMin.Length > 0.0 && filter.DimensionMax.Length > 0.0 {
+			if vehicle.Length < filter.DimensionMin.Length || vehicle.Length > filter.DimensionMax.Length {
 				continue
 			}
 		}
 
-		if filter.Dimensions.Width > 0 {
-			if filter.Dimensions.Width != vehicle.Dimensions.Width {
-				continue
-			}
-		}
-
-		if filter.Dimensions.Height > 0 {
-			if filter.Dimensions.Height != vehicle.Dimensions.Height {
+		if filter.DimensionMin.Width > 0.0 && filter.DimensionMax.Width > 0.0 {
+			if vehicle.Width < filter.DimensionMin.Width || vehicle.Width > filter.DimensionMax.Width {
 				continue
 			}
 		}

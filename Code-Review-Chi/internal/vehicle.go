@@ -47,8 +47,10 @@ type VehicleAttributesFilter struct {
 	MaxSpeed             float64
 	FuelType             string
 	Transmission         string
-	Weight               float64
-	Dimensions
+	WeightMin            float64
+	WeightMax            float64
+	DimensionMin         Dimensions
+	DimensionMax         Dimensions
 }
 
 // Vehicle is a struct that represents a vehicle

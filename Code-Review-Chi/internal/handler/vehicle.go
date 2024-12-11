@@ -537,16 +537,162 @@ func (h *VehicleDefault) PutFuel(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(vehicle)
 }
 
-func (h *VehicleDefault) GetAverageBrand(w http.ResponseWriter, r *http.Request) {
-	//url := r.URL.Path[len("/vehicles/average_capacity/brand/"):]
+func (h *VehicleDefault) GetAverageCapacity(w http.ResponseWriter, r *http.Request) {
+	brand := r.URL.Path[len("/vehicles/average_capacity/brand/"):]
+	avarage, err := h.sv.GetAverageCapacity(brand)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fmt.Sprint("Avarage Capacity: ", avarage))
 }
 
 func (h *VehicleDefault) GetDimensions(w http.ResponseWriter, r *http.Request) {
 	//search
-	//url := r.URL.Path[len("/vehicles/"):]
+	//url := r.URL.Path[len("/vehicles/dimensions?length={min_length}-{max_length}&width={min_width}-{max_width}"):]
+
+	paramLength := r.URL.Query().Get("length")
+	paramWidth := r.URL.Query().Get("width")
+
+	paramsLength := strings.Split(paramLength, "-")
+	if len(paramsLength) != 2 {
+		ResponseWithError(w, errors.New("the URL is not in the correct format"), http.StatusBadRequest)
+		return
+	}
+
+	paramsWidth := strings.Split(paramWidth, "-")
+	if len(paramsLength) != 2 {
+		ResponseWithError(w, errors.New("the URL is not in the correct format"), http.StatusBadRequest)
+		return
+	}
+
+	lendthMin, err := strconv.ParseFloat(paramsLength[0], 64)
+	if err != nil {
+		ResponseWithError(w, errors.New("invalid price format"), http.StatusBadRequest)
+		return
+	}
+
+	lendthMax, err := strconv.ParseFloat(paramsLength[1], 64)
+	if err != nil {
+		ResponseWithError(w, errors.New("invalid price format"), http.StatusBadRequest)
+		return
+	}
+
+	widthMin, err := strconv.ParseFloat(paramsWidth[0], 64)
+	if err != nil {
+		ResponseWithError(w, errors.New("invalid price format"), http.StatusBadRequest)
+		return
+	}
+
+	widthMax, err := strconv.ParseFloat(paramsWidth[1], 64)
+	if err != nil {
+		ResponseWithError(w, errors.New("invalid price format"), http.StatusBadRequest)
+		return
+	}
+
+	dimMin := internal.Dimensions{
+		Length: lendthMin,
+		Width:  widthMin,
+	}
+
+	dimMax := internal.Dimensions{
+		Length: lendthMax,
+		Width:  widthMax,
+	}
+
+	filter := internal.VehicleAttributesFilter{
+		DimensionMin: dimMin,
+		DimensionMax: dimMax,
+	}
+
+	vehicles, err := h.sv.GetVehiclesWithFilter(filter)
+	if customErr, ok := err.(*errorss.CustomError); ok {
+		http.Error(w, customErr.Message, customErr.StatusHttp)
+	} else if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := make(map[int]VehicleJSON)
+	for key, value := range *vehicles {
+		data[key] = VehicleJSON{
+			ID:              value.Id,
+			Brand:           value.Brand,
+			Model:           value.Model,
+			Registration:    value.Registration,
+			Color:           value.Color,
+			FabricationYear: value.FabricationYear,
+			Capacity:        value.Capacity,
+			MaxSpeed:        value.MaxSpeed,
+			FuelType:        value.FuelType,
+			Transmission:    value.Transmission,
+			Weight:          value.Weight,
+			Height:          value.Height,
+			Length:          value.Length,
+			Width:           value.Width,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
 }
 
 func (h *VehicleDefault) GetWeight(w http.ResponseWriter, r *http.Request) {
 	//search
-	//url := r.URL.Path[len("/vehicles/"):]
+	//url := r.URL.Path[len("/vehicles/weight?min={weight_min}&max={weight_max}"):]
+
+	weightMinStr := r.URL.Query().Get("min")
+	weightMaxStr := r.URL.Query().Get("max")
+
+	weightMin, err := strconv.ParseFloat(weightMinStr, 64)
+	if err != nil {
+		ResponseWithError(w, errors.New("formato de peso mínimo inválido"), http.StatusBadRequest)
+		return
+	}
+
+	weightMax, err := strconv.ParseFloat(weightMaxStr, 64)
+	if err != nil {
+		ResponseWithError(w, errors.New("formato de peso máximo inválido"), http.StatusBadRequest)
+		return
+	}
+
+	filter := internal.VehicleAttributesFilter{
+		WeightMin: weightMin,
+		WeightMax: weightMax,
+	}
+
+	vehicles, err := h.sv.GetVehiclesWithFilter(filter)
+	if customErr, ok := err.(*errorss.CustomError); ok {
+		http.Error(w, customErr.Message, customErr.StatusHttp)
+	} else if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := make(map[int]VehicleJSON)
+	for key, value := range *vehicles {
+		data[key] = VehicleJSON{
+			ID:              value.Id,
+			Brand:           value.Brand,
+			Model:           value.Model,
+			Registration:    value.Registration,
+			Color:           value.Color,
+			FabricationYear: value.FabricationYear,
+			Capacity:        value.Capacity,
+			MaxSpeed:        value.MaxSpeed,
+			FuelType:        value.FuelType,
+			Transmission:    value.Transmission,
+			Weight:          value.Weight,
+			Height:          value.Height,
+			Length:          value.Length,
+			Width:           value.Width,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
 }

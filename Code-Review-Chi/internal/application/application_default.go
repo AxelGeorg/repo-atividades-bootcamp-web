@@ -80,11 +80,10 @@ func (a *ServerChi) Run() (err error) {
 		r.Get("/fuel_type/{type}", hd.GetFuelType)
 		r.Delete("/{id}", hd.Delete)
 		r.Get("/transmission/{type}", hd.GetTransmission)
-
 		r.Put("/{id}/update_fuel", hd.PutFuel)
-		r.Get("/average_capacity/brand/{brand}", hd.GetAverageBrand)
-		r.Get("/dimensions?length={min_length}-{max_length}&width={min_width}-{max_width}", hd.GetDimensions)
-		r.Get("/weight?min={weight_min}&max={weight_max}", hd.GetWeight)
+		r.Get("/average_capacity/brand/{brand}", hd.GetAverageCapacity)
+		r.Get("/dimensions", hd.GetDimensions)
+		r.Get("/weight", hd.GetWeight)
 	})
 
 	// run server
