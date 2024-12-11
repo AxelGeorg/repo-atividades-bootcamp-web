@@ -73,6 +73,8 @@ func (a *ServerChi) Run() (err error) {
 		// - GET /vehicles
 		r.Get("/", hd.GetAll)
 		r.Get("/color/{color}/year/{year}", hd.GetColorYear)
+		r.Get("/brand/{brand}/between/{start_year}/{end_year}", hd.GetBrandAndYearsPeriod)
+
 		r.Post("/", hd.Post)
 	})
 

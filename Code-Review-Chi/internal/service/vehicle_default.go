@@ -80,7 +80,7 @@ func (s *VehicleDefault) Create(vehicle internal.VehicleAttributes) (v internal.
 	return
 }
 
-func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributes) (*map[int]internal.Vehicle, error) {
+func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributesFilter) (*map[int]internal.Vehicle, error) {
 	list, err := s.rp.FindAll()
 	if err != nil {
 		return nil, errorss.NewBadRequestError("no vehicles")
@@ -113,8 +113,12 @@ func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributes
 			}
 		}
 
-		if filter.FabricationYear > 0 {
-			if filter.FabricationYear != vehicle.FabricationYear {
+		if filter.FabricationYearStart > 0 && filter.FabricationYearStart == filter.FabricationYearEnd {
+			if filter.FabricationYearStart != vehicle.FabricationYear {
+				continue
+			}
+		} else if filter.FabricationYearStart > 0 && filter.FabricationYearEnd > 0 {
+			if vehicle.FabricationYear > filter.FabricationYearEnd || vehicle.FabricationYear < filter.FabricationYearStart {
 				continue
 			}
 		}

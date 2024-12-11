@@ -36,6 +36,21 @@ type VehicleAttributes struct {
 	Dimensions
 }
 
+type VehicleAttributesFilter struct {
+	Brand                string
+	Model                string
+	Registration         string
+	Color                string
+	FabricationYearStart int
+	FabricationYearEnd   int
+	Capacity             int
+	MaxSpeed             float64
+	FuelType             string
+	Transmission         string
+	Weight               float64
+	Dimensions
+}
+
 // Vehicle is a struct that represents a vehicle
 type Vehicle struct {
 	// Id is the unique identifier of the vehicle

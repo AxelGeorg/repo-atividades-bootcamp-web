@@ -172,9 +172,70 @@ func (h *VehicleDefault) GetColorYear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filter := internal.VehicleAttributes{
-		Color:           params[0],
-		FabricationYear: fabricationYear,
+	filter := internal.VehicleAttributesFilter{
+		Color:                params[0],
+		FabricationYearStart: fabricationYear,
+		FabricationYearEnd:   fabricationYear,
+	}
+
+	vehicles, err := h.sv.GetVehiclesWithFilter(filter)
+	if customErr, ok := err.(*errorss.CustomError); ok {
+		http.Error(w, customErr.Message, customErr.StatusHttp)
+	} else if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := make(map[int]VehicleJSON)
+	for key, value := range *vehicles {
+		data[key] = VehicleJSON{
+			ID:              value.Id,
+			Brand:           value.Brand,
+			Model:           value.Model,
+			Registration:    value.Registration,
+			Color:           value.Color,
+			FabricationYear: value.FabricationYear,
+			Capacity:        value.Capacity,
+			MaxSpeed:        value.MaxSpeed,
+			FuelType:        value.FuelType,
+			Transmission:    value.Transmission,
+			Weight:          value.Weight,
+			Height:          value.Height,
+			Length:          value.Length,
+			Width:           value.Width,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
+}
+
+func (h *VehicleDefault) GetBrandAndYearsPeriod(w http.ResponseWriter, r *http.Request) {
+	brancAndYearsPeriod := r.URL.Path[len("/vehicles/brand/"):]
+
+	params := strings.Split(brancAndYearsPeriod, "/")
+	if len(params) != 4 {
+		ResponseWithError(w, errors.New("the URL is not in the correct format"), http.StatusBadRequest)
+		return
+	}
+
+	yearStart, err := strconv.Atoi(params[2])
+	if err != nil {
+		ResponseWithError(w, errors.New("fabrication year must be a valid integer"), http.StatusBadRequest)
+		return
+	}
+
+	yearEnd, err := strconv.Atoi(params[3])
+	if err != nil {
+		ResponseWithError(w, errors.New("fabrication year must be a valid integer"), http.StatusBadRequest)
+		return
+	}
+
+	filter := internal.VehicleAttributesFilter{
+		Brand:                params[0],
+		FabricationYearStart: yearStart,
+		FabricationYearEnd:   yearEnd,
 	}
 
 	vehicles, err := h.sv.GetVehiclesWithFilter(filter)
