@@ -2,7 +2,7 @@ package service
 
 import (
 	"app/internal"
-	"app/internal/errors"
+	errorss "app/internal/errors"
 )
 
 // NewVehicleDefault is a function that returns a new instance of VehicleDefault
@@ -24,37 +24,37 @@ func (s *VehicleDefault) FindAll() (v map[int]internal.Vehicle, err error) {
 
 func validateVehicle(repo internal.VehicleRepository, vehicle internal.VehicleAttributes) error {
 	if vehicle.Brand == "" {
-		return errors.NewBadRequestError("brand is required")
+		return errorss.NewBadRequestError("brand is required")
 	}
 	if vehicle.Model == "" {
-		return errors.NewBadRequestError("model is required")
+		return errorss.NewBadRequestError("model is required")
 	}
 	if vehicle.Registration == "" {
-		return errors.NewBadRequestError("registration is required")
+		return errorss.NewBadRequestError("registration is required")
 	}
 	if vehicle.Color == "" {
-		return errors.NewBadRequestError("color is required")
+		return errorss.NewBadRequestError("color is required")
 	}
 	if vehicle.FabricationYear <= 0 {
-		return errors.NewBadRequestError("fabrication year must be a positive value")
+		return errorss.NewBadRequestError("fabrication year must be a positive value")
 	}
 	if vehicle.Capacity <= 0 {
-		return errors.NewBadRequestError("capacity must be greater than zero")
+		return errorss.NewBadRequestError("capacity must be greater than zero")
 	}
 	if vehicle.MaxSpeed < 0 {
-		return errors.NewBadRequestError("max speed cannot be negative")
+		return errorss.NewBadRequestError("max speed cannot be negative")
 	}
 	if vehicle.FuelType == "" {
-		return errors.NewBadRequestError("fuel type is required")
+		return errorss.NewBadRequestError("fuel type is required")
 	}
 	if vehicle.Transmission == "" {
-		return errors.NewBadRequestError("transmission is required")
+		return errorss.NewBadRequestError("transmission is required")
 	}
 	if vehicle.Weight <= 0 {
-		return errors.NewBadRequestError("weight must be a positive value")
+		return errorss.NewBadRequestError("weight must be a positive value")
 	}
 	if vehicle.Dimensions.Length <= 0 || vehicle.Dimensions.Width <= 0 || vehicle.Dimensions.Height <= 0 {
-		return errors.NewBadRequestError("dimensions must be positive values")
+		return errorss.NewBadRequestError("dimensions must be positive values")
 	}
 
 	v, err := repo.GetByRegistration(vehicle.Registration)
@@ -63,7 +63,7 @@ func validateVehicle(repo internal.VehicleRepository, vehicle internal.VehicleAt
 	}
 
 	if v != nil {
-		return errors.NewConflictError("vehicle with this registration already exists")
+		return errorss.NewConflictError("vehicle with this registration already exists")
 	}
 
 	return nil
@@ -78,4 +78,97 @@ func (s *VehicleDefault) Create(vehicle internal.VehicleAttributes) (v internal.
 
 	v, err = s.rp.Create(vehicle)
 	return
+}
+
+func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributes) (*map[int]internal.Vehicle, error) {
+	list, err := s.rp.FindAll()
+	if err != nil {
+		return nil, errorss.NewBadRequestError("no vehicles")
+	}
+
+	mapReturn := make(map[int]internal.Vehicle)
+
+	for _, vehicle := range list {
+		if filter.Brand != "" {
+			if filter.Brand != vehicle.Brand {
+				continue
+			}
+		}
+
+		if filter.Model != "" {
+			if filter.Model != vehicle.Model {
+				continue
+			}
+		}
+
+		if filter.Registration != "" {
+			if filter.Registration != vehicle.Registration {
+				continue
+			}
+		}
+
+		if filter.Color != "" {
+			if filter.Color != vehicle.Color {
+				continue
+			}
+		}
+
+		if filter.FabricationYear > 0 {
+			if filter.FabricationYear != vehicle.FabricationYear {
+				continue
+			}
+		}
+
+		if filter.Capacity > 0 {
+			if filter.Capacity != vehicle.Capacity {
+				continue
+			}
+		}
+
+		if filter.MaxSpeed > 0 {
+			if filter.MaxSpeed != vehicle.MaxSpeed {
+				continue
+			}
+		}
+
+		if filter.FuelType != "" {
+			if filter.FuelType != vehicle.FuelType {
+				continue
+			}
+		}
+
+		if filter.Transmission != "" {
+			if filter.Transmission != vehicle.Transmission {
+				continue
+			}
+		}
+
+		if filter.Weight > 0 {
+			if filter.Weight != vehicle.Weight {
+				continue
+			}
+		}
+
+		if filter.Dimensions.Length > 0 {
+			if filter.Dimensions.Length != vehicle.Dimensions.Length {
+				continue
+			}
+		}
+
+		if filter.Dimensions.Width > 0 {
+			if filter.Dimensions.Width != vehicle.Dimensions.Width {
+				continue
+			}
+		}
+
+		if filter.Dimensions.Height > 0 {
+			if filter.Dimensions.Height != vehicle.Dimensions.Height {
+				continue
+			}
+		}
+
+		mapReturn[vehicle.Id] = vehicle
+	}
+
+	return &mapReturn, nil
 }

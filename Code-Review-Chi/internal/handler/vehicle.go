@@ -2,9 +2,11 @@ package handler
 
 import (
 	"app/internal"
-	"app/internal/errors"
+	errorss "app/internal/errors"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/bootcamp-go/web/response"
@@ -160,10 +162,52 @@ func (h *VehicleDefault) GetColorYear(w http.ResponseWriter, r *http.Request) {
 
 	params := strings.Split(colorAndYear, "/")
 	if len(params) != 3 {
-		ResponseWithError(w, errors, http.StatusBadRequest)
+		ResponseWithError(w, errors.New("the URL is not in the correct format"), http.StatusBadRequest)
 		return
 	}
 
+	fabricationYear, err := strconv.Atoi(params[2])
+	if err != nil {
+		ResponseWithError(w, errors.New("fabrication year must be a valid integer"), http.StatusBadRequest)
+		return
+	}
+
+	filter := internal.VehicleAttributes{
+		Color:           params[0],
+		FabricationYear: fabricationYear,
+	}
+
+	vehicles, err := h.sv.GetVehiclesWithFilter(filter)
+	if customErr, ok := err.(*errorss.CustomError); ok {
+		http.Error(w, customErr.Message, customErr.StatusHttp)
+	} else if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := make(map[int]VehicleJSON)
+	for key, value := range *vehicles {
+		data[key] = VehicleJSON{
+			ID:              value.Id,
+			Brand:           value.Brand,
+			Model:           value.Model,
+			Registration:    value.Registration,
+			Color:           value.Color,
+			FabricationYear: value.FabricationYear,
+			Capacity:        value.Capacity,
+			MaxSpeed:        value.MaxSpeed,
+			FuelType:        value.FuelType,
+			Transmission:    value.Transmission,
+			Weight:          value.Weight,
+			Height:          value.Height,
+			Length:          value.Length,
+			Width:           value.Width,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
 }
 
 func (h *VehicleDefault) Post(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +238,7 @@ func (h *VehicleDefault) Post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	productServ, err := h.sv.Create(vehicle)
-	if customErr, ok := err.(*errors.CustomError); ok {
+	if customErr, ok := err.(*errorss.CustomError); ok {
 		http.Error(w, customErr.Message, customErr.StatusHttp)
 	} else if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
