@@ -195,3 +195,11 @@ func (s *VehicleDefault) GetVehiclesWithFilter(filter internal.VehicleAttributes
 
 	return &mapReturn, nil
 }
+
+func (s *VehicleDefault) Patch(id int, updates map[string]interface{}) (*internal.Vehicle, error) {
+	vehicle, err := s.rp.Patch(id, updates)
+	if err != nil {
+		return nil, err
+	}
+	return vehicle, nil
+}

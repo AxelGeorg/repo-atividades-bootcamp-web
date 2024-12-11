@@ -75,7 +75,9 @@ func (a *ServerChi) Run() (err error) {
 		r.Get("/color/{color}/year/{year}", hd.GetColorYear)
 		r.Get("/brand/{brand}/between/{start_year}/{end_year}", hd.GetBrandAndYearsPeriod)
 		r.Get("/average_speed/brand/{brand}", hd.GetAverageSpeed)
+		r.Post("/batch/", hd.PostMany)
 		r.Post("/", hd.Post)
+		r.Put("/{id}/update_speed", hd.PutSpeed)
 	})
 
 	// run server

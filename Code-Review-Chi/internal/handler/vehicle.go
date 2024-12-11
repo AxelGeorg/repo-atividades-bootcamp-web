@@ -274,12 +274,10 @@ func (h *VehicleDefault) GetBrandAndYearsPeriod(w http.ResponseWriter, r *http.R
 
 func (h *VehicleDefault) GetAverageSpeed(w http.ResponseWriter, r *http.Request) {
 	brand := r.URL.Path[len("/vehicles/average_speed/brand/"):]
-	fmt.Println(brand)
 	avarage, err := h.sv.GetAverageSpeed(brand)
 	if err != nil {
 		ResponseWithError(w, err, http.StatusBadRequest)
 	}
-	fmt.Println(avarage)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -322,4 +320,74 @@ func (h *VehicleDefault) Post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondWithVehicle(w, &productServ, http.StatusCreated, MessageVehicleCreated)
+}
+
+func (h *VehicleDefault) PostMany(w http.ResponseWriter, r *http.Request) {
+	var reqBodies []RequestBodyVehicle
+	if err := json.NewDecoder(r.Body).Decode(&reqBodies); err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	for _, reqBody := range reqBodies {
+		dimensions := internal.Dimensions{
+			Height: reqBody.Height,
+			Length: reqBody.Length,
+			Width:  reqBody.Width,
+		}
+
+		vehicle := internal.VehicleAttributes{
+			Brand:           reqBody.Brand,
+			Model:           reqBody.Model,
+			Registration:    reqBody.Registration,
+			Color:           reqBody.Color,
+			FabricationYear: reqBody.FabricationYear,
+			Capacity:        reqBody.Capacity,
+			MaxSpeed:        reqBody.MaxSpeed,
+			FuelType:        reqBody.FuelType,
+			Transmission:    reqBody.Transmission,
+			Weight:          reqBody.Weight,
+			Dimensions:      dimensions,
+		}
+
+		_, err := h.sv.Create(vehicle)
+		if err != nil {
+			ResponseWithError(w, err, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode("Vehicles created successfully")
+}
+
+func (h *VehicleDefault) PutSpeed(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.Path[len("/vehicles/"):]
+
+	params := strings.Split(url, "/")
+	if len(params) != 2 {
+		ResponseWithError(w, errors.New("the URL is not in the correct format"), http.StatusBadRequest)
+		return
+	}
+
+	idVehicle, err := strconv.Atoi(params[0])
+	if err != nil {
+		ResponseWithError(w, errors.New("fabrication year must be a valid integer"), http.StatusBadRequest)
+		return
+	}
+
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	vehicle, err := h.sv.Patch(idVehicle, updates)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(vehicle)
 }

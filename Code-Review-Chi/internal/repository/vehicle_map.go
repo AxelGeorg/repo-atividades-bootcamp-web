@@ -2,6 +2,7 @@ package repository
 
 import (
 	"app/internal"
+	"errors"
 	"fmt"
 )
 
@@ -43,6 +44,15 @@ func (r *VehicleMap) Create(vehicle internal.VehicleAttributes) (v internal.Vehi
 	return
 }
 
+func (r *VehicleMap) GetById(id int) (*internal.Vehicle, error) {
+	vehicle, ok := r.db[id]
+	if !ok {
+		return nil, errors.New("erro")
+	}
+
+	return &vehicle, nil
+}
+
 func (r *VehicleMap) GetByRegistration(registration string) (*internal.Vehicle, error) {
 	for _, value := range r.db {
 		if value.Registration == registration {
@@ -51,4 +61,19 @@ func (r *VehicleMap) GetByRegistration(registration string) (*internal.Vehicle, 
 	}
 
 	return nil, nil
+}
+
+func (r *VehicleMap) Patch(id int, updates map[string]interface{}) (*internal.Vehicle, error) {
+	vehicle, err := r.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if maxSpeed, ok := updates["max_speed"].(float64); ok {
+		vehicle.MaxSpeed = maxSpeed
+	}
+
+	r.db[id] = *vehicle
+
+	return vehicle, nil
 }
