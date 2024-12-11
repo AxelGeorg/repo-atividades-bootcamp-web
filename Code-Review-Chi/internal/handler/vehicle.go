@@ -37,6 +37,10 @@ type VehicleJSON struct {
 	Width           float64 `json:"width"`
 }
 
+type RequestBodyFuelType struct {
+	FuelType string `json:"fuel_type"`
+}
+
 type RequestBodyVehicle struct {
 	Brand           string  `json:"brand"`
 	Model           string  `json:"model"`
@@ -390,4 +394,159 @@ func (h *VehicleDefault) PutSpeed(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(vehicle)
+}
+
+func (h *VehicleDefault) GetFuelType(w http.ResponseWriter, r *http.Request) {
+	fuelType := r.URL.Path[len("/vehicles/fuel_type/"):]
+	if fuelType == "" {
+		ResponseWithError(w, errors.New("erro"), http.StatusBadRequest)
+		return
+	}
+
+	filter := internal.VehicleAttributesFilter{
+		FuelType: fuelType,
+	}
+
+	vehicles, err := h.sv.GetVehiclesWithFilter(filter)
+	if customErr, ok := err.(*errorss.CustomError); ok {
+		http.Error(w, customErr.Message, customErr.StatusHttp)
+	} else if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := make(map[int]VehicleJSON)
+	for key, value := range *vehicles {
+		data[key] = VehicleJSON{
+			ID:              value.Id,
+			Brand:           value.Brand,
+			Model:           value.Model,
+			Registration:    value.Registration,
+			Color:           value.Color,
+			FabricationYear: value.FabricationYear,
+			Capacity:        value.Capacity,
+			MaxSpeed:        value.MaxSpeed,
+			FuelType:        value.FuelType,
+			Transmission:    value.Transmission,
+			Weight:          value.Weight,
+			Height:          value.Height,
+			Length:          value.Length,
+			Width:           value.Width,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
+}
+
+func (h *VehicleDefault) Delete(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.Path[len("/vehicles/"):]
+	if url == "" {
+		ResponseWithError(w, errors.New("erro"), http.StatusBadRequest)
+		return
+	}
+
+	idVehicle, err := strconv.Atoi(url)
+	if err != nil {
+		ResponseWithError(w, errors.New("fabrication year must be a valid integer"), http.StatusBadRequest)
+		return
+	}
+
+	err = h.sv.Delete(idVehicle)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *VehicleDefault) GetTransmission(w http.ResponseWriter, r *http.Request) {
+	transmission := r.URL.Path[len("/vehicles/transmission/"):]
+	if transmission == "" {
+		ResponseWithError(w, errors.New("erro"), http.StatusBadRequest)
+		return
+	}
+
+	filter := internal.VehicleAttributesFilter{
+		Transmission: transmission,
+	}
+
+	vehicles, err := h.sv.GetVehiclesWithFilter(filter)
+	if customErr, ok := err.(*errorss.CustomError); ok {
+		http.Error(w, customErr.Message, customErr.StatusHttp)
+	} else if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := make(map[int]VehicleJSON)
+	for key, value := range *vehicles {
+		data[key] = VehicleJSON{
+			ID:              value.Id,
+			Brand:           value.Brand,
+			Model:           value.Model,
+			Registration:    value.Registration,
+			Color:           value.Color,
+			FabricationYear: value.FabricationYear,
+			Capacity:        value.Capacity,
+			MaxSpeed:        value.MaxSpeed,
+			FuelType:        value.FuelType,
+			Transmission:    value.Transmission,
+			Weight:          value.Weight,
+			Height:          value.Height,
+			Length:          value.Length,
+			Width:           value.Width,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
+}
+
+func (h *VehicleDefault) PutFuel(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.Path[len("/vehicles/"):]
+	params := strings.Split(url, "/")
+	if len(params) != 2 {
+		ResponseWithError(w, errors.New("the URL is not in the correct format"), http.StatusBadRequest)
+		return
+	}
+
+	idVehicle, err := strconv.Atoi(params[0])
+	if err != nil {
+		ResponseWithError(w, errors.New("fabrication year must be a valid integer"), http.StatusBadRequest)
+		return
+	}
+
+	var update RequestBodyFuelType
+	if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+		ResponseWithError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	vehicle, err := h.sv.PutFuel(idVehicle, update.FuelType)
+	if err != nil {
+		ResponseWithError(w, err, http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(vehicle)
+}
+
+func (h *VehicleDefault) GetAverageBrand(w http.ResponseWriter, r *http.Request) {
+	//url := r.URL.Path[len("/vehicles/average_capacity/brand/"):]
+}
+
+func (h *VehicleDefault) GetDimensions(w http.ResponseWriter, r *http.Request) {
+	//search
+	//url := r.URL.Path[len("/vehicles/"):]
+}
+
+func (h *VehicleDefault) GetWeight(w http.ResponseWriter, r *http.Request) {
+	//search
+	//url := r.URL.Path[len("/vehicles/"):]
 }

@@ -77,3 +77,25 @@ func (r *VehicleMap) Patch(id int, updates map[string]interface{}) (*internal.Ve
 
 	return vehicle, nil
 }
+
+func (r *VehicleMap) PutFuel(id int, fuelType string) (*internal.Vehicle, error) {
+	vehicle, err := r.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	vehicle.FuelType = fuelType
+
+	r.db[id] = *vehicle
+	return vehicle, nil
+}
+
+func (r *VehicleMap) Delete(id int) error {
+	_, err := r.GetById(id)
+	if err != nil {
+		return err
+	}
+
+	delete(r.db, id)
+	return nil
+}

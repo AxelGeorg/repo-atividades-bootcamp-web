@@ -8,4 +8,6 @@ type VehicleRepository interface {
 	GetByRegistration(registration string) (v *Vehicle, err error)
 	Create(vehicle VehicleAttributes) (v Vehicle, err error)
 	Patch(id int, updates map[string]interface{}) (*Vehicle, error)
+	PutFuel(id int, fuelType string) (*Vehicle, error)
+	Delete(id int) error
 }

@@ -203,3 +203,19 @@ func (s *VehicleDefault) Patch(id int, updates map[string]interface{}) (*interna
 	}
 	return vehicle, nil
 }
+
+func (s *VehicleDefault) Delete(id int) error {
+	err := s.rp.Delete(id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *VehicleDefault) PutFuel(id int, fuelType string) (*internal.Vehicle, error) {
+	vehicle, err := s.rp.PutFuel(id, fuelType)
+	if err != nil {
+		return nil, err
+	}
+	return vehicle, nil
+}

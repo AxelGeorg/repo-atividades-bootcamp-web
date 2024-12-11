@@ -8,4 +8,6 @@ type VehicleService interface {
 	GetVehiclesWithFilter(filter VehicleAttributesFilter) (*map[int]Vehicle, error)
 	GetAverageSpeed(brand string) (float64, error)
 	Patch(id int, updates map[string]interface{}) (*Vehicle, error)
+	PutFuel(id int, fuelType string) (*Vehicle, error)
+	Delete(id int) error
 }
